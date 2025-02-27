@@ -22,7 +22,7 @@ npm install @efthemiosprime/poly
 Poly implements several key abstractions from category theory:
 
 ### Maybe
-Handle nullable values gracefully without null checks
+Handle nullable values without null checks
 
 ```javascript
 // Instead of:
