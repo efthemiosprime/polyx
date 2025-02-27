@@ -7,5 +7,5 @@ export const ArrayTransform = {
       toSet: () => new Set(Array.from(arr)),
       toArray: () => Array.from(arr)
     })
-  };
+};
   
