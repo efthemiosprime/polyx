@@ -3,12 +3,27 @@
   "version": "0.0.1",
   "description": "A minimal functional utilities based on category theory",
   "type": "module",
-  "main": "./dist/poly.umd.cjs",
-  "module": "./dist/poly.js",
+  "main": "./dist/umd/poly.umd.js",
+  "module": "./dist/esm/index.js",
   "exports": {
     ".": {
-      "import": "./dist/poly.js",
-      "require": "./dist/poly.umd.cjs"
+      "import": "./dist/esm/index.js",
+      "require": "./dist/umd/poly.umd.js"
+    },
+    "./core": {
+      "import": "./dist/esm/core.js"
+    },
+    "./data": {
+      "import": "./dist/esm/data.js"
+    },
+    "./dom": {
+      "import": "./dist/esm/dom.js"
+    },
+    "./async": {
+      "import": "./dist/esm/async.js"
+    },
+    "./advanced": {
+      "import": "./dist/esm/advanced.js"
     }
   },
   "files": [
