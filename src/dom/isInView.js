@@ -71,3 +71,17 @@ export const isInView = (element, align = 'bottom', options = {}) => {
     )
     .getOrElse(false);
 };
+
+
+/**
+ * Creates a function that checks if a selector is in view
+ * 
+ * @param {string} selector - CSS selector for the element
+ * @param {string} [align='bottom'] - Alignment option
+ * @param {Object} [options] - Additional options passed to isInView
+ * @returns {Function} Function that returns boolean when called
+ */
+export const createInViewChecker = (selector, align = 'bottom', options = {}) => () => {
+  const element = document.querySelector(selector);
+  return isInView(element, align, options);
+};
