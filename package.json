@@ -1,6 +1,6 @@
 {
   "name": "@efthemiosprime/poly",
-  "version": "0.0.4",
+  "version": "0.0.6",
   "description": "A minimal functional utilities based on category theory",
   "type": "module",
   "main": "./dist/umd/poly.umd.js",
