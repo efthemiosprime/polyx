@@ -1,6 +1,7 @@
 export { Maybe } from './core/maybe.js';
 export { Either } from './core/either.js';
 export { ArrayTransform } from './core/arrayTransform.js';
+export {compose, tap, pipe, curry, when, ifElse, evolve } from './core/compose.js'
 export { createScrollManager, scrollManager } from './dom/scrollManager.js';
 export { isInView, createInViewChecker } from './dom/isInView.js';
 export { flatten, flattenWith } from './data/flatten.js';

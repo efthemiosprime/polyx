@@ -50,6 +50,7 @@
     "theory",
     "monad",
     "functor",
+    "compose",
     "applicative",
     "either",
     "maybe",
