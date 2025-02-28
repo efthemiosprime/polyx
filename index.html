@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Poly Library Playground</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    header {
+      background-color: #f8f9fa;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    section {
+      margin-bottom: 5rem;
+      padding: 2rem;
+      border-radius: 8px;
+      border: 1px solid #e9ecef;
+    }
+    
+    h1 {
+      color: #0066cc;
+      margin-top: 0;
+    }
+    
+    h2 {
+      color: #0066cc;
+      border-bottom: 2px solid #e9ecef;
+      padding-bottom: 0.5rem;
+    }
+    
+    h3 {
+      color: #0066cc;
+    }
+    
+    pre {
+      background-color: #f8f9fa;
+      padding: 1rem;
+      border-radius: 4px;
+      overflow-x: auto;
+      border: 1px solid #e9ecef;
+    }
+    
+    code {
+      font-family: 'Courier New', Courier, monospace;
+    }
+    
+    .playground-section {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .playground-container {
+      background-color: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #e9ecef;
+    }
+    
+    .playground-output {
+      background-color: #fff;
+      border: 1px solid #dee2e6;
+      padding: 15px;
+      border-radius: 4px;
+      min-height: 100px;
+    }
+    
+    button {
+      padding: 8px 16px;
+      background-color: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    
+    button:hover {
+      background-color: #0056b3;
+    }
+    
+    .demo-component {
+      margin-top: 2rem;
+      border: 1px solid #dee2e6;
+      padding: 1rem;
+      border-radius: 4px;
+    }
+    
+    /* Anchor Navigation Styles */
+    .cmp-anchor-nav {
+      position: relative;
+      background-color: #f8f9fa;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+    
+    .cmp-anchor-nav[fixed] {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      animation: slideDown 0.3s ease;
+    }
+    
+    @keyframes slideDown {
+      from { transform: translateY(-100%); }
+      to { transform: translateY(0); }
+    }
+    
+    .cmp-anchor-nav__list {
+      display: flex;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      flex-wrap: wrap;
+    }
+    
+    .cmp-anchor-nav__list li {
+      margin-right: 20px;
+    }
+    
+    .cmp-anchor-nav__list li.-active a {
+      font-weight: bold;
+      color: #0066cc;
+      border-bottom: 2px solid #0066cc;
+    }
+    
+    .cmp-anchor-nav__list a {
+      text-decoration: none;
+      color: #495057;
+      padding: 5px 0;
+      display: inline-block;
+      transition: color 0.3s;
+    }
+    
+    .cmp-anchor-nav__list a:hover {
+      color: #0066cc;
+    }
+    
+    .cmp-anchor-toggle__mobile {
+      display: none; /* Show only on mobile */
+    }
+    
+    .cmp-anchor__chevron {
+      display: none; /* Show only on mobile */
+    }
+    
+    /* Demo sections for anchor links */
+    .demo-section {
+      height: 500px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      font-size: 24px;
+    }
+    
+
+    @media (max-width: 768px) {
+      .cmp-anchor-nav__list {
+        display: none;
+      }
+      
+      .cmp-anchor-nav[expand] .cmp-anchor-nav__list {
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .cmp-anchor-toggle__mobile {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 10px;
+        background-color: #e9ecef;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      
+      .cmp-anchor__chevron {
+        display: inline-block;
+        float: right;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Poly Library Playground</h1>
+    <p>This playground demonstrates components refactored with the Poly functional library.</p>
+  </header>
+  
+  <main>
+    <section>
+      <h2>Poly Library Utilities</h2>
+      
+      <div class="playground-section">
+        <h3>Maybe Monad</h3>
+        <div class="playground-container">
+          <pre><code>// Example of Maybe monad usage
+const maybeValue = Maybe.of(document.querySelector('#nonexistent'))
+  .map(el => el.textContent)
+  .getOrElse('Default value');</code></pre>
+          <button id="run-maybe">Run Example</button>
+          <div id="maybe-output" class="playground-output"></div>
+        </div>
+        
+        <h3>ArrayTransform</h3>
+        <div class="playground-container">
+          <pre><code>// Example of ArrayTransform usage
+const result = ArrayTransform.from([1, 2, 3, 4, 5])
+  .map(x => x * 2)
+  .filter(x => x > 5)
+  .toArray();</code></pre>
+          <button id="run-array">Run Example</button>
+          <div id="array-output" class="playground-output"></div>
+        </div>
+        
+        <h3>IO Monad</h3>
+        <div class="playground-container">
+          <pre><code>// Example of IO monad usage
+const logCurrentTime = IO(() => {
+  const now = new Date().toLocaleTimeString();
+  return now;
+})
+  .map(time => `Current time: ${time}`);</code></pre>
+          <button id="run-io">Run Example</button>
+          <div id="io-output" class="playground-output"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+  
+  <script>
+    // Mock implementations of Poly library utilities for the playground
+    const Maybe = {
+      of: value => ({
+        value,
+        isNothing: value === null || value === undefined,
+        map: fn => Maybe.of(value === null || value === undefined ? value : fn(value)),
+        flatMap: fn => value === null || value === undefined ? Maybe.of(value) : fn(value),
+        getOrElse: defaultValue => value === null || value === undefined ? defaultValue : value,
+        filter: predicate => {
+          if (value === null || value === undefined) {
+            return Maybe.of(value);
+          }
+          return predicate(value) ? Maybe.of(value) : Maybe.of(null);
+        },
+        tap: fn => {
+          if (value !== null && value !== undefined) {
+            fn(value);
+          }
+          return Maybe.of(value);
+        }
+      })
+    };
+
+    const ArrayTransform = {
+      from: arr => ({
+        value: Array.from(arr),
+        map: fn => ArrayTransform.from(Array.from(arr).map(fn)),
+        filter: fn => ArrayTransform.from(Array.from(arr).filter(fn)),
+        forEach: fn => { Array.from(arr).forEach(fn); return ArrayTransform.from(arr); },
+        toSet: () => new Set(Array.from(arr)),
+        toArray: () => Array.from(arr)
+      })
+    };
+
+    const IO = fn => ({
+      run: fn,
+      map: f => IO(() => f(fn())),
+      flatMap: f => IO(() => f(fn()).run()),
+      chain(f) { return this.flatMap(f); }
+    });
+
+    const getElement = selector => Maybe.of(document.querySelector(selector));
+    
+    const getElements = function(selector) {
+      return Array.from(this.querySelectorAll(selector));
+    };
+    
+    const addEvent = (event, handler) => element => {
+      element.addEventListener(event, handler);
+      return element;
+    };
+
+    // Simple scroll manager for demo purposes
+    const scrollManager = {
+      subscribers: [],
+      subscribe: function(callback) {
+        this.subscribers.push(callback);
+        return () => {
+          this.unsubscribe(callback);
+        };
+      },
+      unsubscribe: function(callback) {
+        this.subscribers = this.subscribers.filter(cb => cb !== callback);
+      },
+      subscribeOnceVisible: function(component, elements, callback) {
+        const checkVisibility = () => {
+          elements.forEach(element => {
+            if (element && this.isElementVisible(element)) {
+              callback({ element });
+            }
+          });
+        };
+        
+        this.subscribe(() => checkVisibility());
+        checkVisibility(); // Initial check
+      },
+      isElementVisible: function(element) {
+        const rect = element.getBoundingClientRect();
+        return (
+          rect.top < window.innerHeight / 2 &&
+          rect.bottom > 0
+        );
+      },
+      init: function() {
+        let lastScrollY = window.scrollY;
+        let ticking = false;
+        
+        window.addEventListener('scroll', () => {
+          if (!ticking) {
+            window.requestAnimationFrame(() => {
+              const direction = window.scrollY > lastScrollY ? 'down' : 'up';
+              const scrollData = {
+                position: window.scrollY,
+                direction,
+                y: window.scrollY
+              };
+              
+              this.subscribers.forEach(callback => {
+                try {
+                  callback(scrollData);
+                } catch (err) {
+                  console.error('Error in scroll subscriber:', err);
+                }
+              });
+              
+              lastScrollY = window.scrollY;
+              ticking = false;
+            });
+            ticking = true;
+          }
+        }, { passive: true });
+      }
+    };
+
+    // Initialize scroll manager
+    scrollManager.init();
+    
+    // Simplified version of the anchor nav component for the playground
+    class CMPAnchorNav extends HTMLElement {
+      constructor() {
+        super();
+        this.childNodes.forEach(node => {
+          if ((/SCRIPT|EMBED|STYLE|IFRAME|OBJECT/gi.test(node.nodeName))) {
+            node.remove();
+          }
+        });
+      }
+
+      connectedCallback() {
+        const list = this.querySelector(".cmp-anchor-nav__list");
+        const toggleBtn = this.querySelector(".cmp-anchor-toggle__mobile");
+        const chevronBtn = this.querySelector(".cmp-anchor__chevron");
+
+        const fragment = new DocumentFragment();
+        this.mobileActiveItem = this.querySelector(".cmp-anchor-toggle__mobile");
+        
+        ArrayTransform.from(this.children)
+          .forEach(el => {
+            if (el.tagName === "A") {
+              const li = document.createElement('li');
+              li.addEventListener("click", () => {
+                this.toggleAttribute("expand");
+              });
+              
+              el.className += " anchor-nav-link";
+              li.appendChild(el);
+              fragment.appendChild(li);
+            }
+            
+            if (!el.classList.contains("container") && el.tagName !== "A") {
+              this.removeChild(el);
+            }
+          });
+
+        list.appendChild(fragment);
+
+        const navListItems = getElements.call(this, '.cmp-anchor-nav__list a');
+        
+        this.targetElements = ArrayTransform.from(navListItems)
+          .map(item => {
+            return Maybe.of(item)
+              .map(a => a.getAttribute("href"))
+              .map(href => {
+                if (href && href.includes("#") && href.split("#")[1] !== "") {
+                  return href.split("#")[1];
+                }
+                return null;
+              })
+              .map(id => id ? document.getElementById(id) : null)
+              .getOrElse(null);
+          })
+          .toArray()
+          .filter(Boolean);
+
+        if (toggleBtn || chevronBtn) {
+          [toggleBtn, chevronBtn].filter(Boolean).forEach(btn => {
+            btn.addEventListener("click", (e) => {
+              e.preventDefault();
+              this.toggleAttribute("expand");
+            });
+          });
+        }
+
+        this.initScroll();
+      }
+
+      initScroll() {
+        this.hasTriggeredFixedRemoval = false;
+        this.originalOffset = this.getBoundingClientRect().top;
+
+        const list = getElements.call(this, ".cmp-anchor-nav__list li");
+
+        scrollManager.subscribe((scrollData) => {
+          const scrollTop = scrollData.position;
+
+          if (scrollTop >= this.originalOffset) {
+            if (!this.hasTriggeredFixedRemoval) {
+              this.setAttribute("fixed", "");
+            }
+          }
+
+          if (scrollData.direction === 'up' && scrollTop <= this.originalOffset && !this.hasTriggeredFixedRemoval) {
+            this.removeAttribute("fixed");
+          }
+
+          if (scrollData.direction === 'down') {
+            this.removeAttribute("style");
+          } else if (scrollData.direction === 'up') {
+            this.style.transform = window.innerWidth < 768 ? "translateY(100px)" : "translateY(124px)";
+          }
+        });
+
+        scrollManager.subscribeOnceVisible(this, this.targetElements, (data) => {
+          ArrayTransform.from(list)
+            .forEach(li => {
+              const a = li.querySelector("a");
+              
+              if (a.href.includes(data.element.id)) {
+                li.classList.add("-active");
+                
+                Maybe.of(this.mobileActiveItem)
+                  .map(item => {
+                    item.innerText = a.innerText;
+                    return item;
+                  });
+              } else {
+                li.classList.remove("-active");
+              }
+            });
+        });
+      }
+    }
+
+    if (!customElements.get('cmp-anchor-nav')) {
+      customElements.define("cmp-anchor-nav", CMPAnchorNav);
+    }
+
+    // Set up playground examples
+    document.getElementById('run-maybe').addEventListener('click', () => {
+      const output = document.getElementById('maybe-output');
+      
+      // Example with existing element
+      const existingResult = Maybe.of(document.querySelector('h1'))
+        .map(el => el.textContent)
+        .getOrElse('Default value');
+      
+      // Example with non-existing element
+      const nonExistingResult = Maybe.of(document.querySelector('#nonexistent'))
+        .map(el => el.textContent)
+        .getOrElse('Default value');
+      
+      output.innerHTML = `
+        <p>Result with existing element: <strong>${existingResult}</strong></p>
+        <p>Result with non-existing element: <strong>${nonExistingResult}</strong></p>
+      `;
+    });
+
+    document.getElementById('run-array').addEventListener('click', () => {
+      const output = document.getElementById('array-output');
+      
+      const result = ArrayTransform.from([1, 2, 3, 4, 5])
+        .map(x => x * 2)
+        .filter(x => x > 5)
+        .toArray();
+      
+      output.innerHTML = `
+        <p>Original array: [1, 2, 3, 4, 5]</p>
+        <p>After mapping (x * 2) and filtering (x > 5): <strong>[${result.join(', ')}]</strong></p>
+      `;
+    });
+
+    document.getElementById('run-io').addEventListener('click', () => {
+      const output = document.getElementById('io-output');
+      
+      const logCurrentTime = IO(() => {
+        const now = new Date().toLocaleTimeString();
+        return now;
+      })
+        .map(time => `Current time: ${time}`);
+      
+      const result = logCurrentTime.run();
+      
+      output.innerHTML = `
+        <p>Result of IO execution: <strong>${result}</strong></p>
+        <p>Note: The IO monad allowed us to capture the side effect (getting current time) without executing it until we called .run()</p>
+      `;
+    });
+  </script>
+</body>
+</html>
