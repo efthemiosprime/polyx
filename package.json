@@ -30,8 +30,11 @@
     "dist"
   ],
   "scripts": {
+    "build": "npm run build:all",
+    "build:all": "npm run build:es && npm run build:umd",
+    "build:es": "BUILD_TYPE=es vite build",
+    "build:umd": "BUILD_TYPE=umd vite build",
     "dev": "vite",
-    "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
