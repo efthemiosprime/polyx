@@ -1,8 +1,7 @@
 export { Maybe } from './core/maybe.js';
 export { Either } from './core/either.js';
 export { ArrayTransform } from './core/arrayTransform.js';
-export {compose, tap, pipe, curry, when, ifElse, evolve } from './core/compose.js'
-export { createScrollManager, scrollManager } from './dom/scrollManager.js';
+export { scrollManager } from './dom/scrollManager.js';
 export { isInView, createInViewChecker } from './dom/isInView.js';
 export { flatten, flattenWith } from './data/flatten.js';
 export { path, getPath, makePath } from './data/path.js';
@@ -15,6 +14,17 @@ export {
   removeClass, 
   toggleClass 
 } from './dom/utils.js';
+
+export {
+  compose,
+  tap, 
+  pipe, 
+  curry, 
+  when, 
+  ifElse, 
+  evolve 
+} from './core/compose.js';
+
 
 // Re-export full modules for dynamic imports
 export * as data from './data/index.js';

@@ -1,3 +1,5 @@
+import { Maybe } from "../core";
+
 /**
  * Determines if an element is in the viewport with optional alignment
  * 
@@ -85,3 +87,8 @@ export const createInViewChecker = (selector, align = 'bottom', options = {}) =>
   const element = document.querySelector(selector);
   return isInView(element, align, options);
 };
+
+// const element = document.querySelector('.my-element');
+// if (isInView(element, 'center')) {
+//   // Element is in view with center alignment
+// }

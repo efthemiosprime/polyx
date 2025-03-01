@@ -32,8 +32,8 @@
   "scripts": {
     "build": "npm run build:all",
     "build:all": "npm run build:es && npm run build:umd",
-    "build:es": "BUILD_TYPE=es vite build",
-    "build:umd": "BUILD_TYPE=umd vite build",
+    "build:es": "cross-env FORMAT=es vite build",
+    "build:umd": "cross-env FORMAT=umd vite build",
     "dev": "vite",
     "preview": "vite preview",
     "test": "vitest run",
@@ -60,6 +60,7 @@
   "author": "Your Name",
   "license": "MIT",
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "eslint": "^8.57.0",
     "terser": "^5.39.0",
     "vite": "^6.2.0",

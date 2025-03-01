@@ -27,11 +27,14 @@ const generateEntries = () => {
   return entries;
 };
 
-export default defineConfig(({ mode }) => {
-  const isBuildingUmd = process.env.FORMAT === 'umd';
+export default defineConfig(({ command, mode }) => {
+  const format = process.env.FORMAT;
+  const isUmd = format === 'umd';
+  
+  console.log('Build format:', format, 'Is UMD:', isUmd);
   
   // UMD build configuration (single entry)
-  if (isBuildingUmd) {
+  if (isUmd) {
     return {
       build: {
         outDir: 'dist/umd',
