@@ -41,7 +41,7 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src --ext js",
     "prepublishOnly": "npm run build",
-    "publish": "npm publish --access public"
+    "push": "npm publish --access public"
   },
   "keywords": [
     "functional",
