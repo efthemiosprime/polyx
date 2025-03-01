@@ -40,9 +40,9 @@ export default defineConfig(({ command, mode }) => {
         outDir: 'dist/umd',
         lib: {
           entry: resolve(__dirname, 'src/index.js'),
-          name: 'Poly',
+          name: 'Polyx',
           formats: ['umd'],
-          fileName: () => 'poly.umd.js'
+          fileName: () => 'polyx.umd.js'
         },
         rollupOptions: {
           external: [],
