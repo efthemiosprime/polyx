@@ -1,4 +1,4 @@
-# @efthemiosprime/poly
+# @efthemiosprime/polyx
 
 A lightweight functional programming library implementing various concepts from category theory.
 
