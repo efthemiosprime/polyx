@@ -14,7 +14,7 @@ Poly isn't just a utility library—it's a learning journey through functional p
 ## Installation
 
 ```bash
-npm install @efthemiosprime/poly
+npm install @efthemiosprime/polyx
 ```
 
 ## Core Concepts
