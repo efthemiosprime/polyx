@@ -21,6 +21,7 @@ PolyX addresses these challenges through functional programming patterns that ha
 - **Task**: Manage asynchronous operations with powerful composition tools
 - **Validation**: Collect and combine multiple validation errors
 - **State**: Handle stateful computations in a pure, functional way
+- **DOM Utilities**: Functional wrappers for DOM manipulation, including scrollManager, event handling, and other browser interactions
 
 ## Declarative vs Imperative
 
