@@ -3,13 +3,26 @@
 A lightweight functional programming library implementing various concepts from category theory.
 
 ## Purpose
-
-Poly isn't just a utility library—it's a learning journey through functional programming and category theory concepts. Designed for both practical application and educational exploration, Poly helps JavaScript developers:
+PolyX is primarily designed for learning purposes. While there are already many robust and battle-tested functional programming libraries available for JavaScript, I created PolyX as a personal journey to deeply understand both the theoretical foundations and practical implementations of these concepts. This library represents my hands-on exploration of functional programming patterns and how they can be applied to real-world projects. It's ideal for developers who, like me, want to learn by building and experimenting with these powerful abstractions rather than just using them as a black box. PolyX helps JavaScript developers:
 
 - **Learn** fundamental category theory concepts through practical code examples
 - **Explore** functional programming patterns in a real-world context
 - **Apply** powerful abstractions to everyday JavaScript problems
 - **Understand** how mathematical concepts translate into programming paradigms
+
+
+## Documentation
+
+Comprehensive documentation for PolyX is available in the [docs](/docs) directory. 
+
+Key sections:
+- [Getting Started](/docs/getting-started.md)
+- [Core Modules](/docs/core)
+- [Common Patterns](/docs/patterns)
+- [Recipes](/docs/recipes)
+- [API Reference](/docs/api)
+
+For a complete overview, see the [Documentation Table of Contents](/docs/README.md).
 
 ## Installation
 
@@ -29,7 +42,7 @@ Handle nullable values without null checks
 const name = user && user.profile && user.profile.name ? user.profile.name : 'Guest';
 
 // Use Maybe:
-import { Maybe } from '@efthemiosprime/poly';
+import { Maybe } from '@efthemiosprime/polyx';
 
 const name = Maybe.of(user)
   .map(user => user.profile)
@@ -41,7 +54,7 @@ const name = Maybe.of(user)
 Express computations that might fail without throwing exceptions
 
 ```javascript
-import { Either } from '@efthemiosprime/poly';
+import { Either } from '@efthemiosprime/polyx';
 
 const divide = (a, b) => 
   b === 0 
@@ -59,7 +72,7 @@ divide(10, 2)
 Manage asynchronous operations with better composition than Promises
 
 ```javascript
-import { Task } from '@efthemiosprime/poly';
+import { Task } from '@efthemiosprime/polyx';
 
 const fetchUser = id => 
   Task((reject, resolve) => 
@@ -82,7 +95,7 @@ fetchUser(123)
 
 ## Learning Path
 
-Poly is organized to help you learn functional programming concepts incrementally:
+PolyX is organized to help you learn functional programming concepts incrementally:
 
 1. **Start with Maybe** - The simplest and most immediately useful monad
 2. **Explore Either** - Learn error handling without exceptions
@@ -102,7 +115,7 @@ The library includes practical examples to help you understand how these concept
 
 ## Educational Resources
 
-Poly comes with detailed documentation explaining not just how to use each abstraction, but also:
+PolyX comes with detailed documentation explaining not just how to use each abstraction, but also:
 
 - The mathematical concepts behind each implementation
 - Diagrams illustrating how data flows through these structures
@@ -111,9 +124,9 @@ Poly comes with detailed documentation explaining not just how to use each abstr
 
 ## Playground
 
-Try out Poly concepts in our online playground without installation:
+Try out PolyX concepts in our online playground without installation:
 
-[Poly Playground](https://efthemiosprime.github.io/poly-playground) (coming soon)
+[PolyX Playground](https://efthemiosprime.github.io/poly-playground) (coming soon)
 
 ## Further Learning
 
