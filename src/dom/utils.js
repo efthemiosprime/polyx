@@ -9,10 +9,12 @@ import { Maybe } from '../core/maybe.js';
  * Gets an element safely using a CSS selector
  * 
  * @param {string} selector - CSS selector
+ * @param {Element} [parent=document] - Optional parent element to scope the selection
  * @returns {Maybe} Maybe monad containing the element or Nothing
  */
-export const getElement = (selector) =>
-  Maybe.of(document.querySelector(selector));
+export const getElement = (selector, parent) =>
+ Maybe.of((parent || document).querySelector(selector));
+
 
 /**
  * Gets multiple elements safely using a CSS selector
