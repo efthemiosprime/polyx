@@ -16,8 +16,9 @@ import { Maybe } from '../core/maybe.js';
  * @returns {Maybe} - A Maybe monad containing the selected element or null
  */
 export const getElement = (selector) => {
-  // If using function.call(thisArg, selector), use thisArg as parent
-  if (this !== undefined && this !== window && this !== globalThis) {
+  // Check if this has a querySelector method (indicating it's an Element)
+  // This will be true when called with .call(elementWithQuerySelector, selector)
+  if (this && typeof this.querySelector === 'function' && this !== document && this !== window && this !== globalThis) {
     return Maybe.of(this.querySelector(selector));
   }
   
