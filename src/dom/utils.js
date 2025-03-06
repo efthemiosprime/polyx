@@ -7,25 +7,15 @@ import { Maybe } from '../core/maybe.js';
 
 /**
  * Gets an element safely based on a CSS selector.
- * 
- * This function can be used in two ways:
- * 1. Regular call: getElement(selector) - searches in document
- * 2. With .call: getElement.call(parentElement, selector) - searches in the parentElement
+ * If a parent element is provided, the selection is scoped to that parent.
+ * Otherwise, it defaults to searching in the document.
  * 
  * @param {string} selector - CSS selector string
+ * @param {Element} [parent=document] - Optional parent element to scope the selection
  * @returns {Maybe} - A Maybe monad containing the selected element or null
  */
-export const getElement = (selector) => {
-  // Check if this has a querySelector method (indicating it's an Element)
-  // This will be true when called with .call(elementWithQuerySelector, selector)
-  if (this && typeof this.querySelector === 'function' && this !== document) {
-    return Maybe.of(this.querySelector(selector));
-  }
-  
-  // Regular function call - use document as parent
-  return Maybe.of(document.querySelector(selector));
-}
-
+export const getElement = (selector, parent) =>
+  Maybe.of((parent || document).querySelector(selector));
 
 /**
  * Gets multiple elements safely using a CSS selector
