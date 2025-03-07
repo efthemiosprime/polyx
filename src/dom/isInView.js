@@ -29,7 +29,7 @@ export const isInView = (element, align = 'center', options = {}) => {
   const calculateOffset = (boundary, alignType) => {
     const offsetMap = {
       'top': boundary => boundary.height * -1,
-      'center': boundary => boundary.height / 2,
+      'center': boundary => boundary.height / -2, // Negative because we're offsetting upward
       'bottom': () => 0
     };
     
@@ -47,20 +47,17 @@ export const isInView = (element, align = 'center', options = {}) => {
   const getHeaderOffset = () =>
     isMobile() ? config.mobileOffset : config.desktopOffset;
   
-  const calculateInView = (boundary, offset) => {
-    // Create a calculation context object to avoid mutations
-    const values = {
-      top: boundary.top + getHeaderOffset(),
-      bottom: boundary.bottom + offset,
-      height: boundary.height + offset,
-      clientHeight: Maybe.of(window)
-        .map(w => w.innerHeight)
-        .getOrElse(document.documentElement.clientHeight)
-    };
+  const calculateInView = (boundary, alignOffset) => {
+    const headerOffset = getHeaderOffset();
+    const clientHeight = Maybe.of(window)
+      .map(w => w.innerHeight)
+      .getOrElse(document.documentElement.clientHeight);
+      
+    // Adjust element position based on alignment
+    const alignedTop = boundary.top - alignOffset;
     
-    // Determine visibility with a pure calculation
-    return (values.top + values.height >= values.height) && 
-           (values.height + values.clientHeight >= values.bottom);
+    // Check if the aligned point is in the viewport
+    return (alignedTop + headerOffset >= 0) && (alignedTop + headerOffset < clientHeight);
   };
   
   // Compose all operations using Maybe to handle null safely
@@ -73,7 +70,6 @@ export const isInView = (element, align = 'center', options = {}) => {
     )
     .getOrElse(false);
 };
-
 
 /**
  * Creates a function that checks if a selector is in view
