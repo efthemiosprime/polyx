@@ -26,19 +26,6 @@ export const isInView = (element, align = 'center', options = {}) => {
       .map(el => el.getBoundingClientRect())
       .getOrElse(null);
   
-  const calculateOffset = (boundary, alignType) => {
-    const offsetMap = {
-      'top': boundary => boundary.height * -1,
-      'center': boundary => boundary.height / -2, // Negative because we're offsetting upward
-      'bottom': () => 0
-    };
-    
-    return Maybe.of(alignType)
-      .map(a => offsetMap[a] || offsetMap.bottom)
-      .map(fn => fn(boundary))
-      .getOrElse(0);
-  };
-  
   const isMobile = () => 
     Maybe.of(config.isMobile)
       .map(fn => fn())
@@ -47,17 +34,28 @@ export const isInView = (element, align = 'center', options = {}) => {
   const getHeaderOffset = () =>
     isMobile() ? config.mobileOffset : config.desktopOffset;
   
-  const calculateInView = (boundary, alignOffset) => {
+  const calculateInView = (boundary) => {
     const headerOffset = getHeaderOffset();
     const clientHeight = Maybe.of(window)
       .map(w => w.innerHeight)
       .getOrElse(document.documentElement.clientHeight);
-      
-    // Adjust element position based on alignment
-    const alignedTop = boundary.top - alignOffset;
     
-    // Check if the aligned point is in the viewport
-    return (alignedTop + headerOffset >= 0) && (alignedTop + headerOffset < clientHeight);
+    // Different checks based on alignment
+    if (align === 'top') {
+      // Element is in view when its top edge is in the viewport
+      return (boundary.top + headerOffset >= 0) && (boundary.top + headerOffset < clientHeight);
+    } else if (align === 'center') {
+      // Element is in view when its center point is in the viewport
+      const centerY = boundary.top + (boundary.height / 2);
+      return (centerY + headerOffset >= 0) && (centerY + headerOffset < clientHeight);
+    } else if (align === 'bottom') {
+      // Element is in view when its bottom edge is in the viewport
+      return (boundary.bottom + headerOffset >= 0) && (boundary.bottom + headerOffset < clientHeight);
+    }
+    
+    // Default to center if alignment is not recognized
+    const centerY = boundary.top + (boundary.height / 2);
+    return (centerY + headerOffset >= 0) && (centerY + headerOffset < clientHeight);
   };
   
   // Compose all operations using Maybe to handle null safely
@@ -66,7 +64,7 @@ export const isInView = (element, align = 'center', options = {}) => {
     .flatMap(boundary => 
       boundary === null 
         ? Maybe.of(false) 
-        : Maybe.of(calculateInView(boundary, calculateOffset(boundary, align)))
+        : Maybe.of(calculateInView(boundary))
     )
     .getOrElse(false);
 };
