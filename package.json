@@ -1,6 +1,6 @@
 {
   "name": "@efthemiosprime/polyx",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "A minimal functional utilities based on category theory",
   "type": "module",
   "main": "./dist/umd/polyx.umd.js",
