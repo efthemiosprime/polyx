@@ -11,11 +11,11 @@ import { Maybe } from "../core";
  * @param {number} [options.desktopOffset=100] - Header offset for desktop devices
  * @returns {boolean} Whether the element is in view
  */
-export const isInView = (element, align = 'bottom', options = {}) => {
+export const isInView = (element, align = 'center', options = {}) => {
   const defaults = {
     isMobile: () => false,
-    mobileOffset: 60,
-    desktopOffset: 100
+    mobileOffset: 0,
+    desktopOffset: 0
   };
   
   const config = { ...defaults, ...options };
