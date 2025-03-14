@@ -19,7 +19,7 @@ If you haven't installed PolyX yet, follow the [Installation Guide](/docs/instal
 import { Maybe, Either, Task } from 'polyx';
 
 // Or import everything
-import * as PolyX from 'polyx';
+import * as PolyX from '@efthemiosprime/polx';
 ```
 
 ## The Maybe Monad: Handling Nullable Values
