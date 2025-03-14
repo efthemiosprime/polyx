@@ -16,7 +16,7 @@ If you haven't installed PolyX yet, follow the [Installation Guide](/docs/instal
 
 ```javascript
 // Import specific modules
-import { Maybe, Either, Task } from 'polyx';
+import { Maybe, Either, Task } from '@efthemiosprime/polx';
 
 // Or import everything
 import * as PolyX from '@efthemiosprime/polx';
@@ -30,7 +30,7 @@ The Maybe monad is designed to handle values that might be null or undefined, wi
 
 ```javascript
 // Import the Maybe module
-import { Maybe } from 'polyx';
+import { Maybe } from '@efthemiosprime/polx';
 
 // Creating a Maybe from a value that might be null
 function getUserById(id) {
@@ -121,7 +121,7 @@ Task is a monad for handling asynchronous operations, similar to Promises but wi
 ### Basic Usage
 
 ```javascript
-import { Task } from 'polyx';
+import { Task } from '@efthemiosprime/polx';
 
 // Creating a Task
 const fetchUserTask = Task.of((reject, resolve) => {
