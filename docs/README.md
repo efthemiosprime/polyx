@@ -204,7 +204,7 @@
   - [Test Data Generation](./recipes/testing.md#data-generation)
 
 ### API Reference
-- [Core API](./api/core)
+- [Core API](./api/core/README.md)
 - [Utility Functions](./api/utilities.md)
 - [Extensions](./api/extensions.md)
 
