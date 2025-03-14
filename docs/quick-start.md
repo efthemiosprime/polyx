@@ -70,7 +70,7 @@ While Maybe is great for handling nulls, Either allows you to handle errors with
 ### Basic Usage
 
 ```javascript
-import { Either } from 'polyx';
+import { Either } from '@efthemiosprime/polx';
 
 // A function that might fail
 function divide(a, b) {
