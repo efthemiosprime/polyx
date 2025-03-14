@@ -11,12 +11,12 @@ This document provides detailed information about the core modules and functions
   - [Compose](#compose)
   - [When](#when)
 - [DOM Utilities](#dom-utilities)
-  - [ScrollManager](#scrollmanager)
+  - [scrollManager](#scrollManager)
   - [isInView](#isinview)
 
 ## Core Modules
 
-### Maybe
+### [Maybe](./maybe.md)
 
 The Maybe monad represents computations which might not return a result.
 
@@ -74,7 +74,7 @@ import { Either } from '@efthemiosprime/polyx';
 | `fold(leftFn, rightFn)` | Applies one of two functions. | `((a -> c), (b -> c)) -> c` | `result.fold(err => handleError(err), val => processValue(val))` |
 | `getOrElse(defaultValue)` | Returns Right value or default. | `c -> b \| c` | `result.getOrElse(0)` |
 
-### ArrayTransform
+### [ArrayTransform](./array-transform.md)
 
 The ArrayTransform utility provides a fluent interface for array operations.
 
@@ -98,7 +98,7 @@ import { ArrayTransform } from '@efthemiosprime/polyx';
 | `toSet()` | Converts the array to a Set. | `() -> Set<a>` | `arrayTransform.toSet()` |
 | `toArray()` | Returns the underlying array. | `() -> Array<a>` | `arrayTransform.toArray()` |
 
-### Compose
+### [Compose](./compose.md)
 
 The compose utility enables functional composition, allowing multiple functions to be combined into a single function.
 
@@ -121,7 +121,7 @@ const doubleThenIncrement = compose(increment, double);
 doubleThenIncrement(5); // Returns 11 (5 * 2 + 1)
 ```
 
-### When
+### [When](./when.md)
 
 The when utility conditionally applies a transformation based on a predicate.
 
@@ -147,23 +147,23 @@ doubleIfEven(5); // Returns 5 (unchanged)
 
 ## DOM Utilities
 
-### ScrollManager
+### [scrollManager](./scroll-manager.md)
 
 Provides functional utilities for handling scroll-related functionality in the browser.
 
 ```javascript
-import { ScrollManager } from '@efthemiosprime/polyx/dom';
+import { scrollManager } from '@efthemiosprime/polyx/dom';
 ```
 
 #### Methods
 
 | Method | Description | Signature | Example |
 |--------|-------------|-----------|---------|
-| `getScrollPosition()` | Gets the current scroll position of the window. | `() -> { x: number, y: number }` | `ScrollManager.getScrollPosition()` |
-| `scrollTo(options)` | Scrolls to a specific position in the window. | `{ x?: number, y?: number, behavior?: string } -> void` | `ScrollManager.scrollTo({ y: 500, behavior: 'smooth' })` |
-| `scrollToElement(element, offset = 0)` | Scrolls to a specific DOM element. | `(Element, number) -> void` | `ScrollManager.scrollToElement(document.getElementById('section'), 20)` |
-| `isInViewport(element, offset = 0)` | Checks if an element is in the viewport. | `(Element, number) -> boolean` | `ScrollManager.isInViewport(element)` |
-| `onScroll(callback)` | Registers a scroll event listener. | `(Event -> void) -> () -> void` | `const cleanup = ScrollManager.onScroll(handleScroll)` |
+| `getScrollPosition()` | Gets the current scroll position of the window. | `() -> { x: number, y: number }` | `scrollManager.getScrollPosition()` |
+| `scrollTo(options)` | Scrolls to a specific position in the window. | `{ x?: number, y?: number, behavior?: string } -> void` | `scrollManager.scrollTo({ y: 500, behavior: 'smooth' })` |
+| `scrollToElement(element, offset = 0)` | Scrolls to a specific DOM element. | `(Element, number) -> void` | `scrollManager.scrollToElement(document.getElementById('section'), 20)` |
+| `isInViewport(element, offset = 0)` | Checks if an element is in the viewport. | `(Element, number) -> boolean` | `scrollManager.isInViewport(element)` |
+| `onScroll(callback)` | Registers a scroll event listener. | `(Event -> void) -> () -> void` | `const cleanup = scrollManager.onScroll(handleScroll)` |
 
 ### isInView
 
