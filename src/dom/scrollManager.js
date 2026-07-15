@@ -1,4 +1,69 @@
 /**
+ * Rate-limit a function to at most once per `wait` ms (leading + trailing edge).
+ * The returned function exposes `.cancel()` to drop any pending trailing call.
+ *
+ * @param {Function} fn
+ * @param {number} wait - Minimum ms between invocations
+ * @returns {Function & { cancel: () => void }}
+ */
+const throttle = (fn, wait) => {
+  let last = 0;
+  let timer = null;
+  let lastArgs = null;
+
+  const throttled = (...args) => {
+    const now = Date.now();
+    lastArgs = args;
+    const remaining = wait - (now - last);
+
+    if (remaining <= 0) {
+      if (timer) { clearTimeout(timer); timer = null; }
+      last = now;
+      fn(...args);
+    } else if (!timer) {
+      // Trailing edge: fire once the window elapses with the latest args.
+      timer = setTimeout(() => {
+        last = Date.now();
+        timer = null;
+        fn(...lastArgs);
+      }, remaining);
+    }
+  };
+
+  throttled.cancel = () => {
+    if (timer) { clearTimeout(timer); timer = null; }
+  };
+  return throttled;
+};
+
+/**
+ * Defer a function until `wait` ms have passed without another call — ideal for
+ * "scroll has stopped" work. The returned function exposes `.cancel()`.
+ *
+ * @param {Function} fn
+ * @param {number} wait - Idle ms to wait before firing
+ * @returns {Function & { cancel: () => void }}
+ */
+const debounce = (fn, wait) => {
+  let timer = null;
+  let lastArgs = null;
+
+  const debounced = (...args) => {
+    lastArgs = args;
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      fn(...lastArgs);
+    }, wait);
+  };
+
+  debounced.cancel = () => {
+    if (timer) { clearTimeout(timer); timer = null; }
+  };
+  return debounced;
+};
+
+/**
  * Scroll Manager - Singleton implementation
  * Provides unified scroll event handling with both regular subscriptions
  * and one-time directional triggers
@@ -12,24 +77,27 @@ export const ScrollManager = (() => {
      * @private
      */
     function createInstance() {
-      // Private state
-      const subscribers = new Set();
+      // Private state. subscribers maps the caller's original callback to the
+      // (possibly throttled/debounced) function we actually invoke, so we can
+      // both dispatch and cancel its pending timer on unsubscribe.
+      const subscribers = new Map();
       let isRunning = false;
       let scrollY = 0;
       let lastScrollY = 0;
       let currentDirection = 'down';
       let ticking = false;
-      
+      let rafId = null; // handle for the in-flight frame, so stop() can cancel it
+
       // State for one-time triggers
       const oneTimeTriggers = new Map();
-      
+
       /**
        * Start listening for scroll events
        * @private
        */
       const start = () => {
         if (isRunning) return;
-        
+
         window.addEventListener('scroll', handleScroll, { passive: true });
         isRunning = true;
 
@@ -38,20 +106,28 @@ export const ScrollManager = (() => {
         lastScrollY = scrollY;
         // Don't notify subscribers initially - wait for actual scroll
       };
-      
+
       /**
-       * Stop listening for scroll events
+       * Stop listening for scroll events and release every pending timer/frame.
        * @private
        */
       const stop = () => {
         if (!isRunning) return;
-        
+
         window.removeEventListener('scroll', handleScroll);
         isRunning = false;
+
+        // Cancel any queued frame so a stale notify can't run after stop,
+        // and clear ticking so a later start() isn't wedged.
+        if (rafId !== null) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+        }
+        ticking = false;
       };
-      
+
       /**
-       * Handle scroll events with requestAnimationFrame for performance
+       * Handle scroll events, coalescing bursts into a single rAF-throttled tick.
        * @private
        */
       const handleScroll = () => {
@@ -62,23 +138,21 @@ export const ScrollManager = (() => {
         currentDirection = scrollY > lastScrollY ? 'down' : 'up';
         lastScrollY = scrollY;
 
-        // Mark that actual scrolling has occurred
-        oneTimeTriggers.forEach(trigger => {
-          if (trigger.requireActualScroll) {
-            trigger.hasScrolled = true;
+        if (ticking) return;
+
+        // Set the guard BEFORE scheduling so this stays correct even if rAF runs
+        // synchronously; the callback always clears it via finally.
+        ticking = true;
+        rafId = requestAnimationFrame(() => {
+          rafId = null;
+          try {
+            notifySubscribers();
+          } finally {
+            ticking = false;
           }
         });
-        
-        if (!ticking) {
-          requestAnimationFrame(() => {
-            notifySubscribers();
-            ticking = false;
-          });
-          
-          ticking = true;
-        }
       };
-      
+
       /**
        * Notify all subscribers
        * @private
@@ -90,151 +164,123 @@ export const ScrollManager = (() => {
           timestamp: Date.now()
         };
 
-        // Regular subscribers
-        subscribers.forEach(subscriber => {
-          // Call subscriber with scroll data
+        // Snapshot so a subscriber that (un)subscribes during dispatch can't
+        // disturb the iteration.
+        for (const invoke of [...subscribers.values()]) {
           try {
-            subscriber(scrollData);
+            invoke(scrollData);
           } catch (err) {
             console.error('Error in scroll subscriber:', err);
           }
-        });
-        
-        // Process one-time triggers
+        }
+
         processOneTimeTriggers(scrollData);
       };
-      
+
       /**
-       * Process one-time triggers
+       * Process one-time directional triggers for a frame.
        * @private
        * @param {Object} scrollData - Current scroll data
        */
       const processOneTimeTriggers = (scrollData) => {
-        // Get all up and down triggers
-        const upTriggers = new Map();
-        const downTriggers = new Map();
-        
-        // Sort triggers by direction
-        oneTimeTriggers.forEach((config, id) => {
-          if (config.direction === 'up') {
-            upTriggers.set(id, config);
-          } else if (config.direction === 'down') {
-            downTriggers.set(id, config);
-          }
-        });
-        
-        oneTimeTriggers.forEach((triggerConfig, id) => {
-          const { direction, hasTriggered, callback, resetOnStop, resetDelay, hasScrolled } = triggerConfig;
-          
-          // Add debounce mechanism to prevent rapid repainting
-          const now = Date.now();
-          const minTriggerInterval = 300; // Minimum time between trigger resets (ms)
-          
-          // Initialize lastReset if it doesn't exist
-          if (!triggerConfig.lastReset) {
-            triggerConfig.lastReset = 0;
-          }
-          
-          // Check if this trigger should fire (only if actual scrolling has occurred if required)
-          if (!hasTriggered && hasScrolled && scrollData.direction === direction) {
-            // Call the callback
+        if (oneTimeTriggers.size === 0) return;
+
+        const now = Date.now();
+
+        // Snapshot: a trigger callback may add/remove triggers mid-dispatch.
+        for (const [id, cfg] of [...oneTimeTriggers]) {
+          // Mark that real scrolling has occurred (throttled to the frame).
+          if (cfg.requireActualScroll) cfg.hasScrolled = true;
+
+          const armReset = () => {
+            if (!cfg.resetOnStop || !cfg.resetDelay) return;
+            if (cfg.resetTimeout) clearTimeout(cfg.resetTimeout);
+            cfg.resetTimeout = setTimeout(() => {
+              cfg.hasTriggered = false;
+              cfg.resetTimeout = null;
+              cfg.lastReset = Date.now();
+            }, cfg.resetDelay);
+          };
+
+          const matches = scrollData.direction === cfg.direction;
+
+          if (!cfg.hasTriggered && cfg.hasScrolled && matches) {
+            // Fire.
             try {
-              callback(scrollData);
+              cfg.callback(scrollData);
             } catch (err) {
               console.error(`Error in one-time trigger (${id}):`, err);
             }
-            
-            // Mark as triggered and record time
-            triggerConfig.hasTriggered = true;
-            triggerConfig.lastTriggered = now;
-            
-            // Set up reset timer if needed
-            if (resetOnStop && resetDelay) {
-              // Clear existing timeout if any
-              if (triggerConfig.resetTimeout) {
-                clearTimeout(triggerConfig.resetTimeout);
-              }
-              
-              // Schedule reset
-              triggerConfig.resetTimeout = setTimeout(() => {
-                triggerConfig.hasTriggered = false;
-                triggerConfig.lastReset = Date.now();
-              }, resetDelay);
-            }
-          } else if (resetOnStop && resetDelay) {
-            // Always reset the timer when scrolling to detect when scrolling stops
-            if (triggerConfig.resetTimeout) {
-              clearTimeout(triggerConfig.resetTimeout);
-            }
-            
-            triggerConfig.resetTimeout = setTimeout(() => {
-              triggerConfig.hasTriggered = false;
-              triggerConfig.lastReset = Date.now();
-            }, resetDelay);
+            cfg.hasTriggered = true;
+            cfg.lastTriggered = now;
+            armReset();
+          } else if (cfg.hasTriggered && matches) {
+            // Re-arm the "scrolling stopped" reset only for already-fired
+            // triggers still moving in their direction (avoids per-frame churn
+            // on triggers that could never reset anyway).
+            armReset();
           }
-          
-          // Check if enough time has passed since last reset before resetting again
-          const timeSinceLastReset = now - (triggerConfig.lastReset || 0);
-          const canReset = timeSinceLastReset > minTriggerInterval;
-          
-          // Reset opposite direction triggers with debouncing
-          // If we're scrolling down, reset up triggers (with debounce)
-          if (scrollData.direction === 'down' && direction === 'up' && hasTriggered && canReset) {
-            triggerConfig.hasTriggered = false;
-            triggerConfig.lastReset = now;
-            
-            if (triggerConfig.resetTimeout) {
-              clearTimeout(triggerConfig.resetTimeout);
-              triggerConfig.resetTimeout = null;
+
+          // When direction reverses, let an already-fired opposite trigger arm
+          // again — debounced so a jittery reversal doesn't thrash it.
+          const debounce = cfg.debounceInterval ?? 300;
+          if (cfg.hasTriggered && !matches && now - (cfg.lastReset || 0) > debounce) {
+            cfg.hasTriggered = false;
+            cfg.lastReset = now;
+            if (cfg.resetTimeout) {
+              clearTimeout(cfg.resetTimeout);
+              cfg.resetTimeout = null;
             }
           }
-          
-          // If we're scrolling up, reset down triggers (with debounce)
-          if (scrollData.direction === 'up' && direction === 'down' && hasTriggered && canReset) {
-            triggerConfig.hasTriggered = false;
-            triggerConfig.lastReset = now;
-            
-            if (triggerConfig.resetTimeout) {
-              clearTimeout(triggerConfig.resetTimeout);
-              triggerConfig.resetTimeout = null;
-            }
-          }
-        });
+        }
       };
       
       /**
-       * Subscribe a component to scroll events
-       * 
+       * Subscribe a component to scroll events.
+       *
+       * Notifications are already coalesced to one per animation frame. Pass a
+       * rate limit to further reduce work for expensive subscribers:
+       *   - `throttle`: call at most once per N ms (good for continuous work)
+       *   - `debounce`: call only after scrolling pauses for N ms (scroll-end work)
+       * `debounce` wins if both are given.
+       *
        * @param {Function} callback - Function to call on scroll events
+       * @param {Object} [options]
+       * @param {number} [options.throttle=0] - Max one call per this many ms
+       * @param {number} [options.debounce=0] - Fire only after this idle gap
        * @returns {Function} Unsubscribe function
        */
-      const subscribe = (callback) => {
+      const subscribe = (callback, options = {}) => {
         // Only accept functions as subscribers
         if (typeof callback !== 'function') {
           console.error('Scroll subscriber must be a function');
           return () => {};
         }
-        
-        // Add to subscribers
-        subscribers.add(callback);
-        
-        // Start listening if this is the first subscriber
-        if (subscribers.size === 1 && oneTimeTriggers.size === 0) {
-          start();
-        }
-        
+
+        const { throttle: throttleMs = 0, debounce: debounceMs = 0 } = options;
+        let invoke = callback;
+        if (debounceMs > 0) invoke = debounce(callback, debounceMs);
+        else if (throttleMs > 0) invoke = throttle(callback, throttleMs);
+
+        // Keyed by the caller's original callback so unsubscribe(cb) works.
+        subscribers.set(callback, invoke);
+
+        if (!isRunning) start();
+
         // Return unsubscribe function
         return () => unsubscribe(callback);
       };
-      
+
       /**
-       * Unsubscribe a component from scroll events
-       * 
+       * Unsubscribe a component from scroll events.
+       *
        * @param {Function} callback - The callback function to remove
        */
       const unsubscribe = (callback) => {
+        const invoke = subscribers.get(callback);
+        if (invoke && invoke.cancel) invoke.cancel(); // drop any pending timer
         subscribers.delete(callback);
-        
+
         // Stop listening if no more subscribers and triggers
         if (subscribers.size === 0 && oneTimeTriggers.size === 0) {
           stop();
@@ -288,7 +334,7 @@ export const ScrollManager = (() => {
         });
         
         // Start the scroll listener if needed
-        if (!isRunning && (subscribers.size === 0 && oneTimeTriggers.size === 1)) {
+        if (!isRunning) {
           start();
         }
         
