@@ -36,7 +36,27 @@ export const path = (obj) => {
       let current = obj;
       for (let i = 0; i < keys.length; i++) {
         const key = keys[i];
-        
+
+        // Auto-unwrap common REST wrappers ('data'/'attributes') BEFORE resolving
+        // this segment, so paths like 'blogs.title' transparently traverse
+        // { data: { blogs: { data: { attributes: { title } } } } }. Unwrapping is
+        // skipped when the object already owns `key`, or when `key` is itself the
+        // wrapper name (so explicit '.data'/'.attributes' segments still work).
+        while (
+          current &&
+          typeof current === 'object' &&
+          !Array.isArray(current) &&
+          !Object.prototype.hasOwnProperty.call(current, key)
+        ) {
+          if (key !== 'data' && current.data !== undefined) {
+            current = current.data;
+          } else if (key !== 'attributes' && current.attributes !== undefined) {
+            current = current.attributes;
+          } else {
+            break;
+          }
+        }
+
         // Special handling for arrays with numeric indices
         if (Array.isArray(current) && !isNaN(Number(key))) {
           current = current[Number(key)];
@@ -47,20 +67,8 @@ export const path = (obj) => {
           // Normal property access
           current = current[key];
         }
-        
-        // Handle 'data' and 'attributes' keys common in REST APIs (optional auto-unwrapping)
-        if (i < keys.length - 1 && current && typeof current === 'object') {
-          if (current.data !== undefined && keys[i + 1] !== 'data') {
-            current = current.data;
-            // Don't increment i since we're not consuming a path segment
-          }
-          if (current.attributes !== undefined && keys[i + 1] !== 'attributes') {
-            current = current.attributes;
-            // Don't increment i since we're not consuming a path segment
-          }
-        }
       }
-      
+
       return current !== undefined ? current : defaultValue;
     };
     
