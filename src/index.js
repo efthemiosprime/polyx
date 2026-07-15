@@ -1,5 +1,6 @@
 export { Maybe } from './core/maybe.js';
 export { Either } from './core/either.js';
+export { Validation } from './core/validation.js';
 export { ArrayTransform } from './core/arrayTransform.js';
 export { scrollManager } from './dom/scrollManager.js';
 export { isInView, createInViewChecker } from './dom/isInView.js';
@@ -12,6 +13,7 @@ export {
 export { unflatten, pick, omit, mergeDeep, mergeDeepWith } from './data/transform.js';
 export { IO } from './async/io.js';
 export { Task } from './async/task.js';
+export { createState } from './state/createState.js';
 export { 
   getElement, 
   getElements, 
@@ -40,4 +42,5 @@ export * as data from './data/index.js';
 export * as core from './core/index.js';
 export * as dom from './dom/index.js';
 export * as async from './async/index.js';
+export * as state from './state/index.js';
 // export * as advanced from './advanced/index.js';

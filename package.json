@@ -28,6 +28,10 @@
       "types": "./types/async.d.ts",
       "import": "./dist/esm/async.js"
     },
+    "./state": {
+      "types": "./types/state.d.ts",
+      "import": "./dist/esm/state.js"
+    },
     "./advanced": {
       "import": "./dist/esm/advanced.js"
     }
@@ -58,9 +62,11 @@
     "theory",
     "monad",
     "functor",
+    "applicative",
     "compose",
     "either",
     "maybe",
+    "validation",
     "io",
     "task"
   ],

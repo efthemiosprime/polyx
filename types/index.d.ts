@@ -68,6 +68,33 @@ export const Either: {
 };
 
 // ---------------------------------------------------------------------------
+// core / Validation (applicative, accumulates errors)
+// ---------------------------------------------------------------------------
+
+export interface Validation<E, A> {
+  readonly isSuccess: boolean;
+  readonly isFailure: boolean;
+  /** The success value for a Success, or the errors array for a Failure. */
+  readonly value: A | E[];
+  map<B>(fn: (value: A) => B): Validation<E, B>;
+  mapFailure<E2>(fn: (errors: E[]) => E2[]): Validation<E2, A>;
+  bimap<E2, B>(onFailure: (errors: E[]) => E2[], onSuccess: (value: A) => B): Validation<E2, B>;
+  /** Applicative apply — accumulates errors. Valid when A is `(x: X) => B`. */
+  ap<X, B>(other: Validation<E, X>): Validation<E, B>;
+  fold<R>(onFailure: (errors: E[]) => R, onSuccess: (value: A) => R): R;
+  getOrElse<U>(defaultValue: U): A | U;
+  toEither(): Either<E[], A>;
+}
+
+export const Validation: {
+  Success<E, A>(value: A): Validation<E, A>;
+  Failure<E, A = never>(errors: E[]): Validation<E, A>;
+  of<E, A>(value: A): Validation<E, A>;
+  fail<E>(error: E): Validation<E, never>;
+  fromEither<L, R>(either: Either<L, R>): Validation<L, R>;
+};
+
+// ---------------------------------------------------------------------------
 // core / ArrayTransform
 // ---------------------------------------------------------------------------
 
@@ -177,6 +204,20 @@ export const Task: {
   fromPromise<A>(promiseFn: () => Promise<A>): Task<unknown, A>;
   toPromise<E, A>(task: Task<E, A>): Promise<A>;
 };
+
+// ---------------------------------------------------------------------------
+// state / createState
+// ---------------------------------------------------------------------------
+
+export type StateUpdater<T> = T | ((prev: T) => T);
+
+export type StateStore<T> = [() => T, (next: StateUpdater<T>) => T] & {
+  get(): T;
+  set(next: StateUpdater<T>): T;
+  subscribe(listener: (value: T) => void): () => void;
+};
+
+export function createState<T>(initial: T): StateStore<T>;
 
 // ---------------------------------------------------------------------------
 // data / flatten & path

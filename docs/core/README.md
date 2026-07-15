@@ -7,9 +7,11 @@ This document provides detailed information about the core modules and functions
 - [Core Modules](#core-modules)
   - [Maybe](#maybe)
   - [Either](#either)
+  - [Validation](#validation)
   - [ArrayTransform](#arraytransform)
   - [Compose](#compose)
   - [When](#when)
+  - [State](#state)
 - [Data Utilities](#data-utilities)
   - [Paths (read)](#paths-read)
   - [Paths (immutable write)](#paths-immutable-write)
@@ -99,6 +101,25 @@ import { Either } from '@efthemiosprime/polyx';
 | `getOrElse(defaultValue)` | Returns Right value or default. | `c -> b \| c` | `result.getOrElse(0)` |
 | `getOrElseGet(fn)` | Lazy `getOrElse` — the thunk runs only for a Left. | `(() -> c) -> b \| c` | `result.getOrElseGet(() => load())` |
 | `toMaybe()` | Left → Nothing, Right → Just. | `() -> Maybe<b>` | `result.toMaybe()` |
+
+### [Validation](./validation.md)
+
+Like `Either`, but `ap` **accumulates** errors instead of short-circuiting — collect
+*all* failures (e.g. every invalid form field) in one pass. Applicative, not a monad
+(no `chain`). See the [full Validation guide](./validation.md).
+
+```javascript
+import { Validation } from '@efthemiosprime/polyx';
+```
+
+| Method | Description | Signature |
+|--------|-------------|-----------|
+| `Validation.Success(v)` / `Validation.Failure(errors)` | Success value / failure with an **array** of errors. | `a -> V<e,a>` / `e[] -> V<e,a>` |
+| `Validation.of(v)` / `Validation.fail(e)` | Pure Success / single-error Failure. | `a -> V<e,a>` / `e -> V<e,never>` |
+| `map(fn)` / `mapFailure(fn)` / `bimap(f, g)` | Transform the success / error / either side. | — |
+| `ap(other)` | **Applicative apply — accumulates errors.** | `V<e,x> -> V<e,b>` |
+| `fold(onFail, onOk)` / `getOrElse(d)` | Collapse / extract with default. | — |
+| `toEither()` / `Validation.fromEither(e)` | Convert to/from `Either`. | — |
 
 ### [ArrayTransform](./array-transform.md)
 
@@ -190,6 +211,22 @@ const doubleIfEven = when(isEven, double);
 doubleIfEven(4); // Returns 8
 doubleIfEven(5); // Returns 5 (unchanged)
 ```
+
+### [State](./state.md)
+
+A framework-free `[state, setState]` container (React-like, but `state` is a getter
+since vanilla JS has no re-render). See the [full State guide](./state.md).
+
+```javascript
+import { createState } from '@efthemiosprime/polyx';
+```
+
+| Method | Description | Signature | Example |
+|--------|-------------|-----------|---------|
+| `createState(initial)` | Create a store; returns `[state, setState]` that also carries `get`/`set`/`subscribe`. | `T -> StateStore<T>` | `const [n, setN] = createState(0)` |
+| `state()` / `store.get()` | Read the current value. | `() -> T` | `n()` |
+| `setState(next)` | Set a value or apply an updater `(prev) => next`. | `(T \| (T->T)) -> T` | `setN(x => x + 1)` |
+| `store.subscribe(fn)` | React to changes; returns an unsubscribe. | `((T) -> void) -> (() -> void)` | `store.subscribe(render)` |
 
 ## Data Utilities
 
