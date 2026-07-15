@@ -24,6 +24,17 @@ export const Maybe = {
     map: fn => Maybe.of(value === null || value === undefined ? value : fn(value)),
     flatMap: fn => value === null || value === undefined ? Maybe.of(value) : fn(value),
     getOrElse: defaultValue => value === null || value === undefined ? defaultValue : value,
-    chain(fn) { return this.flatMap(fn); }
+    chain(fn) { return this.flatMap(fn); },
+
+    // Collapse the Maybe: run onNothing() for Nothing, onJust(value) for a value.
+    fold: (onNothing, onJust) =>
+      value === null || value === undefined ? onNothing() : onJust(value),
+
+    // Return an alternative Maybe (from a thunk) when this is Nothing.
+    orElse: fn => value === null || value === undefined ? fn() : Maybe.of(value),
+
+    // Applicative apply: `value` is expected to be a function; apply it to the
+    // other Maybe. Nothing short-circuits.
+    ap: other => value === null || value === undefined ? Maybe.of(value) : other.map(value)
   })
 };
