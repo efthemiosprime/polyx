@@ -211,6 +211,23 @@ export function updatePath(
 ): (obj: any) => any;
 export function dissocPath(pathStr: PathKey): (obj: any) => any;
 export function getPathMaybe(pathStr: PathKey): (obj: any) => Maybe<any>;
+export function getPathOr<D>(defaultValue: D, pathStr: PathKey): (obj: any) => any;
+
+export interface Lens<S, A> {
+  get(s: S): A;
+  set(a: A, s: S): S;
+}
+export function lens<S, A>(
+  getter: (s: S) => A,
+  setter: (a: A, s: S) => S
+): Lens<S, A>;
+export function lensProp(key: string | number): Lens<any, any>;
+export function lensPath(pathStr: PathKey): Lens<any, any>;
+export function lensIndex(index: number): Lens<any[], any>;
+export function composeLens(...lenses: Array<Lens<any, any>>): Lens<any, any>;
+export function view<S, A>(l: Lens<S, A>): (obj: S) => A;
+export function set<S, A>(l: Lens<S, A>, value: A): (obj: S) => S;
+export function over<S, A>(l: Lens<S, A>, fn: (a: A) => A): (obj: S) => S;
 
 // ---------------------------------------------------------------------------
 // dom / isInView, scrollManager, utils

@@ -121,3 +121,18 @@ export const dissocPath = (pathStr) => (obj) =>
  */
 export const getPathMaybe = (pathStr) => (obj) =>
   Maybe.of(getIn(toKeys(pathStr), obj));
+
+/**
+ * Literal read at `path`, returning `defaultValue` only when the path is truly
+ * absent (resolves to `undefined`). Unlike `getPathMaybe`, a stored `null` is
+ * preserved — so this is the correct reader for round-tripping values, and the
+ * basis for `lensPath`'s getter. No `data`/`attributes` unwrapping.
+ *
+ * @param {*} defaultValue - Returned when the path resolves to `undefined`
+ * @param {string|Array} pathStr - Dot-path or key array
+ * @returns {(obj: *) => *} Function of the target that returns the value or default
+ */
+export const getPathOr = (defaultValue, pathStr) => (obj) => {
+  const found = getIn(toKeys(pathStr), obj);
+  return found === undefined ? defaultValue : found;
+};

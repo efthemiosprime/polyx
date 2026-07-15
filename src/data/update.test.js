@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { setPath, updatePath, dissocPath, getPathMaybe } from './update.js';
+import { setPath, updatePath, dissocPath, getPathMaybe, getPathOr } from './update.js';
 
 describe('setPath', () => {
   it('sets a shallow key immutably', () => {
@@ -124,5 +124,19 @@ describe('getPathMaybe', () => {
     const obj = { data: { attributes: { title: 'x' } } };
     expect(getPathMaybe('title')(obj).isNothing).toBe(true);
     expect(getPathMaybe('data.attributes.title')(obj).getOrElse(null)).toBe('x');
+  });
+});
+
+describe('getPathOr', () => {
+  it('returns the value when present', () => {
+    expect(getPathOr(0, 'a.b')({ a: { b: 7 } })).toBe(7);
+  });
+
+  it('returns the default only when the path is absent', () => {
+    expect(getPathOr('def', 'a.x')({ a: { b: 7 } })).toBe('def');
+  });
+
+  it('preserves a stored null (does NOT fall back to the default)', () => {
+    expect(getPathOr('def', 'a.b')({ a: { b: null } })).toBe(null);
   });
 });
