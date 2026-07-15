@@ -12,6 +12,8 @@ These pages exist today:
 ### Core Modules
 - [Core Overview](./core/README.md)
 - [Maybe Monad](./core/maybe.md)
+- [Either Monad](./core/either.md)
+- [Task](./core/task.md)
 - [Compose & Combinators](./core/compose.md)
 - [when](./core/when.md)
 - [ArrayTransform](./core/array-transform.md)

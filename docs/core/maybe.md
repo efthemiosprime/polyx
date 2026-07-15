@@ -187,69 +187,92 @@ This definition explicitly states that a value of type `Maybe a` is either:
 ### Core Functions
 
 #### `Maybe.of(value)`
-Creates a new Maybe instance containing the provided value.
+Wraps a value in a Maybe. If the value is `null` or `undefined`, the result is a
+**Nothing** (`.isNothing === true`); otherwise it's a **Just**.
 
 ```javascript
-const maybeValue = Maybe.of(5);
+const maybeValue = Maybe.of(5);        // Just(5)
+const nothing    = Maybe.of(null);     // Nothing
+const maybeUser  = Maybe.of(user);     // Nothing when user is null/undefined
 ```
 
-#### `Maybe.nothing()`
-Creates an empty Maybe instance representing the absence of a value.
+### Properties
+
+#### `isNothing`
+A boolean property (not a method) — `true` when the Maybe holds `null`/`undefined`.
 
 ```javascript
-const emptyMaybe = Maybe.nothing();
-```
-
-#### `Maybe.fromNullable(value)`
-Creates a Maybe instance based on the nullability of the provided value. If the value is null or undefined, returns Nothing; otherwise, returns a Maybe containing the value.
-
-```javascript
-const maybeUser = Maybe.fromNullable(user);
+Maybe.of(null).isNothing; // true
 ```
 
 ### Instance Methods
 
-#### `isNothing()`
-Returns true if the Maybe instance contains no value.
-
-```javascript
-maybeUser.isNothing(); // true if user is null/undefined
-```
-
 #### `map(fn)`
-Applies a function to the value inside the Maybe if it exists, and returns a new Maybe containing the result. If the Maybe is Nothing, returns Nothing.
+Applies a function to the value if it exists, returning a new Maybe. A Nothing stays Nothing.
 
 ```javascript
 maybeUser.map(user => user.name);
 ```
 
-#### `chain(fn)`
-Similar to map, but expects the function to return a Maybe instance. Useful for operations that might themselves result in Nothing.
+#### `chain(fn)` / `flatMap(fn)`
+Like `map`, but the function returns a Maybe (which is flattened). Useful for steps that
+can themselves be Nothing.
 
 ```javascript
-maybeUser.chain(user => Maybe.fromNullable(user.address));
-```
-
-#### `getOrElse(defaultValue)`
-Returns the value inside the Maybe if it exists, or the provided default value if the Maybe is Nothing.
-
-```javascript
-const userName = maybeUser.map(user => user.name).getOrElse("Anonymous");
+maybeUser.chain(user => Maybe.of(user.address));
 ```
 
 #### `filter(predicate)`
-Returns Nothing if the Maybe is Nothing or if the predicate returns false for the value. Otherwise, returns the original Maybe.
+Returns Nothing if the Maybe is Nothing or the predicate is false; otherwise the Maybe.
 
 ```javascript
 maybeUser.filter(user => user.age >= 18);
 ```
 
-#### `toString()`
-Returns a string representation of the Maybe instance.
+#### `fold(onNothing, onJust)`
+Collapses the Maybe to a single value by handling both cases — `onNothing()` for Nothing,
+`onJust(value)` for a value.
 
 ```javascript
-maybeUser.toString(); // "Maybe(User)" or "Maybe(Nothing)"
+const label = maybeUser.fold(
+  () => 'Guest',
+  user => user.name
+);
 ```
+
+#### `orElse(fn)`
+Supplies an alternative Maybe (from a thunk) when this one is Nothing; a Just is kept.
+Lazy — the thunk runs only for a Nothing.
+
+```javascript
+const config = fromCache('theme').orElse(() => fromDefaults('theme'));
+```
+
+#### `ap(other)`
+Applicative apply: when this Maybe holds a **function**, apply it to `other`. Nothing on
+either side short-circuits.
+
+```javascript
+const add = a => b => a + b;
+Maybe.of(add).ap(Maybe.of(2)).ap(Maybe.of(3)); // Just(5)
+```
+
+#### `tap(fn)`
+Runs a side effect with the value (for a Just) and returns the same Maybe — handy for logging.
+
+```javascript
+maybeUser.tap(user => console.log('got', user));
+```
+
+#### `getOrElse(defaultValue)`
+Returns the value if it exists, otherwise the provided default.
+
+```javascript
+const userName = maybeUser.map(user => user.name).getOrElse('Anonymous');
+```
+
+> **Note:** because `Maybe.of(null)` is a Nothing, a Maybe cannot hold a legitimate `null`
+> as a present value. Use it for "value may be absent", not "value may be null".
 
 ## Real-World Examples
 
