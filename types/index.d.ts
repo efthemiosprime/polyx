@@ -322,6 +322,43 @@ export function onMutation(
   options?: MutationObserverInit
 ): () => void;
 export function ready(): Task<never, Document>;
+
+// ---------------------------------------------------------------------------
+// dom / pure lazy DOM ops (domIO) + functional element construction
+// ---------------------------------------------------------------------------
+
+type Nullable<T> = T | null | undefined;
+
+export interface DomIO {
+  query(selector: string, parent?: Element): IO<Element | null>;
+  queryAll(selector: string, parent?: Element): IO<Element[]>;
+  addClass(className: string): (element: Nullable<Element>) => IO<Nullable<Element>>;
+  removeClass(className: string): (element: Nullable<Element>) => IO<Nullable<Element>>;
+  toggleClass(
+    className: string,
+    force?: boolean
+  ): (element: Nullable<Element>) => IO<Nullable<Element>>;
+  setStyle(
+    property: string,
+    value: string
+  ): (element: Nullable<Element>) => IO<Nullable<Element>>;
+  setHtml(html: string): (element: Nullable<Element>) => IO<Nullable<Element>>;
+  setText(text: string): (element: Nullable<Element>) => IO<Nullable<Element>>;
+  setAttr(
+    name: string,
+    value: string
+  ): (element: Nullable<Element>) => IO<Nullable<Element>>;
+  removeAttr(name: string): (element: Nullable<Element>) => IO<Nullable<Element>>;
+  remove(): (element: Nullable<Element>) => IO<Nullable<Element>>;
+}
+
+export const domIO: DomIO;
+
+export function create(
+  tag: string,
+  props?: Record<string, unknown>,
+  children?: string | Node | Array<string | Node>
+): IO<Element>;
 export function setStyle(
   property: string,
   value: string

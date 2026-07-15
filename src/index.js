@@ -6,6 +6,7 @@ export { scrollManager } from './dom/scrollManager.js';
 export { isInView, createInViewChecker } from './dom/isInView.js';
 export { onIntersect, onResize, onMutation } from './dom/observers.js';
 export { ready } from './dom/ready.js';
+export { domIO, create } from './dom/domIO.js';
 export { flatten, flattenWith } from './data/flatten.js';
 export { path, getPath, makePath } from './data/path.js';
 export { IO } from './async/io.js';

@@ -2,6 +2,7 @@ export { isInView, createInViewChecker } from './isInView.js';
 export { scrollManager } from './scrollManager.js';
 export { onIntersect, onResize, onMutation } from './observers.js';
 export { ready } from './ready.js';
+export { domIO, create } from './domIO.js';
 export {
     getElement,
     getElements,
