@@ -1,6 +1,28 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Either } from './either.js';
 
+describe('Either.toMaybe', () => {
+  it('turns a Right into a Just', () => {
+    const m = Either.Right(5).toMaybe();
+    expect(m.isNothing).toBe(false);
+    expect(m.value).toBe(5);
+  });
+  it('turns a Left into a Nothing', () => {
+    expect(Either.Left('err').toMaybe().isNothing).toBe(true);
+  });
+});
+
+describe('Either.getOrElseGet', () => {
+  it('returns the Right value without calling the thunk', () => {
+    const fn = vi.fn(() => 99);
+    expect(Either.Right(5).getOrElseGet(fn)).toBe(5);
+    expect(fn).not.toHaveBeenCalled();
+  });
+  it('calls the thunk for a Left', () => {
+    expect(Either.Left('err').getOrElseGet(() => 99)).toBe(99);
+  });
+});
+
 describe('Either.Right', () => {
   it('maps and folds down the right branch', () => {
     const r = Either.Right(5).map((x) => x + 1);

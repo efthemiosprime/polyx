@@ -1,5 +1,33 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Maybe } from './maybe.js';
+import { Either } from './either.js';
+
+describe('Maybe.toEither', () => {
+  it('turns a Just into a Right', () => {
+    const e = Maybe.of(5).toEither('missing');
+    expect(e.isRight).toBe(true);
+    expect(e.value).toBe(5);
+  });
+  it('turns a Nothing into a Left with the provided value', () => {
+    const e = Maybe.of(null).toEither('missing');
+    expect(e.isLeft).toBe(true);
+    expect(e.value).toBe('missing');
+  });
+  it('round-trips with Either.toMaybe for a value', () => {
+    expect(Either.Right(7).toMaybe().toEither('x').value).toBe(7);
+  });
+});
+
+describe('Maybe.getOrElseGet', () => {
+  it('returns the value for a Just without calling the thunk', () => {
+    const fn = vi.fn(() => 99);
+    expect(Maybe.of(5).getOrElseGet(fn)).toBe(5);
+    expect(fn).not.toHaveBeenCalled();
+  });
+  it('calls the thunk for a Nothing', () => {
+    expect(Maybe.of(null).getOrElseGet(() => 99)).toBe(99);
+  });
+});
 
 describe('Maybe', () => {
   it('flags null/undefined as Nothing', () => {
