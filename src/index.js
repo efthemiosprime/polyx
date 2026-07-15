@@ -4,17 +4,26 @@ export { Validation } from './core/validation.js';
 export { ArrayTransform } from './core/arrayTransform.js';
 export { scrollManager } from './dom/scrollManager.js';
 export { isInView, createInViewChecker } from './dom/isInView.js';
+export { onIntersect, onResize, onMutation } from './dom/observers.js';
+export { ready } from './dom/ready.js';
+export { domIO, create } from './dom/domIO.js';
 export { flatten, flattenWith } from './data/flatten.js';
 export { path, getPath, makePath } from './data/path.js';
 export { IO } from './async/io.js';
 export { Task } from './async/task.js';
-export { 
-  getElement, 
-  getElements, 
-  addClass, 
+export {
+  getElement,
+  getElements,
+  addClass,
   addEvent,
-  removeClass, 
-  toggleClass 
+  on,
+  delegate,
+  removeClass,
+  toggleClass,
+  setStyle,
+  getStyle,
+  setHtml,
+  setText
 } from './dom/utils.js';
 
 export {

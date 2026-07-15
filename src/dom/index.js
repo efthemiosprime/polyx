@@ -1,10 +1,19 @@
 export { isInView, createInViewChecker } from './isInView.js';
 export { scrollManager } from './scrollManager.js';
-export { 
-    getElement, 
-    getElements, 
-    addClass, 
+export { onIntersect, onResize, onMutation } from './observers.js';
+export { ready } from './ready.js';
+export { domIO, create } from './domIO.js';
+export {
+    getElement,
+    getElements,
+    addClass,
     addEvent,
-    removeClass, 
-    toggleClass 
+    on,
+    delegate,
+    removeClass,
+    toggleClass,
+    setStyle,
+    getStyle,
+    setHtml,
+    setText
   } from './utils.js';

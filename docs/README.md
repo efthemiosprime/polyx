@@ -20,6 +20,8 @@ These pages exist today:
 - [ArrayTransform](./core/array-transform.md)
 - [isInView](./core/is-inview.md)
 - [scrollManager](./core/scroll-manager.md)
+- [DOM Events & Observers](./core/dom-events.md)
+- [Pure DOM (domIO & create)](./core/dom-io.md)
 
 ---
 
