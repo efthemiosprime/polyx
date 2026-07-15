@@ -1,6 +1,31 @@
 # PolyX Documentation
 
-## Table of Contents
+## Available Documentation
+
+These pages exist today:
+
+### Getting Started
+- [Introduction to PolyX](./introduction.md)
+- [Installation Guide](./installation.md)
+- [Quick Start](./quick-start.md)
+
+### Core Modules
+- [Core Overview](./core/README.md)
+- [Maybe Monad](./core/maybe.md)
+- [Compose & Combinators](./core/compose.md)
+- [when](./core/when.md)
+- [ArrayTransform](./core/array-transform.md)
+- [isInView](./core/is-inview.md)
+- [scrollManager](./core/scroll-manager.md)
+
+---
+
+## Planned / Roadmap
+
+> ⚠️ **The table of contents below is aspirational.** These pages are not yet
+> written and the links will not resolve. They describe the documentation we
+> intend to build, not what currently ships. See "Available Documentation" above
+> for the pages that exist today.
 
 ### Getting Started
 - [Introduction to PolyX](./introduction.md)

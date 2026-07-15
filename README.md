@@ -15,14 +15,13 @@ PolyX is primarily designed for learning purposes. While there are already many 
 
 Comprehensive documentation for PolyX is available in the [docs](/docs) directory. 
 
-Key sections:
-- [Getting Started](/docs/getting-started.md)
+Available sections:
+- [Introduction](/docs/introduction.md)
+- [Installation Guide](/docs/installation.md)
+- [Quick Start](/docs/quick-start.md)
 - [Core Modules](/docs/core)
-- [Common Patterns](/docs/patterns)
-- [Recipes](/docs/recipes)
-- [API Reference](/docs/api)
 
-For a complete overview, see the [Documentation Table of Contents](/docs/README.md).
+For the full picture — including planned sections — see the [Documentation Table of Contents](/docs/README.md).
 
 ## Installation
 
@@ -95,27 +94,33 @@ fetchUser(123)
 
 ## Learning Path
 
-PolyX is organized to help you learn functional programming concepts incrementally:
+PolyX is organized to help you learn functional programming concepts incrementally.
+
+**Available today:**
 
 1. **Start with Maybe** - The simplest and most immediately useful monad
 2. **Explore Either** - Learn error handling without exceptions
 3. **Try Task** - Understand asynchronous operations in a functional way
 4. **Study IO** - See how to handle side effects functionally
-5. **Dive into Reader/State** - Explore dependency injection and state management
-6. **Experiment with Lenses** - Learn immutable data manipulation techniques
+
+**Roadmap (not yet implemented):**
+
+5. **Reader / State** - Dependency injection and state management
+6. **Lenses** - Immutable data manipulation techniques
+7. **Validation** - Applicative-style error accumulation
 
 ## Examples
 
-The library includes practical examples to help you understand how these concepts apply to real-world problems:
+Practical examples showing how these concepts apply to real-world problems:
 
-- Form validation using Applicative and Either
-- API clients using Task and Reader
-- State management using State monad
-- DOM manipulation using IO monad
+- DOM manipulation using the IO monad *(available)*
+- API clients using Task *(available)*
+- Form validation using Validation/Either *(roadmap — Validation not yet implemented)*
+- State management using the State monad *(roadmap — State not yet implemented)*
 
 ## Educational Resources
 
-PolyX comes with detailed documentation explaining not just how to use each abstraction, but also:
+PolyX's documentation aims to explain not just how to use each abstraction, but also:
 
 - The mathematical concepts behind each implementation
 - Diagrams illustrating how data flows through these structures
