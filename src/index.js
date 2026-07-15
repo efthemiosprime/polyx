@@ -1,5 +1,6 @@
 export { Maybe } from './core/maybe.js';
 export { Either } from './core/either.js';
+export { Validation } from './core/validation.js';
 export { ArrayTransform } from './core/arrayTransform.js';
 export { scrollManager } from './dom/scrollManager.js';
 export { isInView, createInViewChecker } from './dom/isInView.js';
