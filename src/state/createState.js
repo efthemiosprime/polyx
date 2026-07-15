@@ -27,6 +27,8 @@ export const createState = (initial) => {
   let value = initial;
   const listeners = new Set();
 
+  let notifying = false;
+
   const get = () => value;
 
   const set = (next) => {
@@ -34,9 +36,37 @@ export const createState = (initial) => {
     // Bail out on no-op changes, like React's Object.is comparison.
     if (Object.is(resolved, value)) return value;
     value = resolved;
-    // Snapshot so a listener that (un)subscribes mid-dispatch can't disturb
-    // iteration — the same guard scrollManager uses.
-    for (const listener of [...listeners]) listener(value);
+
+    // Reentrant set (a listener called set during dispatch): just record the new
+    // value and let the active dispatch loop below re-run — this keeps deliveries
+    // ordered and consistent instead of interleaving a nested notification.
+    if (notifying) return value;
+
+    notifying = true;
+    try {
+      let dispatched;
+      let passes = 0;
+      do {
+        // A subscriber that unconditionally sets a new value on every notification
+        // would loop forever; fail loudly instead of hanging (cf. React's
+        // "maximum update depth exceeded").
+        if (++passes > 1000) {
+          throw new Error(
+            'createState: state did not converge — a subscriber keeps calling set() with a new value'
+          );
+        }
+        dispatched = value; // every listener in a pass sees the same value
+        // Snapshot so (un)subscribing mid-dispatch can't disturb iteration, and
+        // re-check membership so a listener removed earlier in this pass by
+        // another listener is not invoked (same guard scrollManager uses).
+        for (const listener of [...listeners]) {
+          if (!listeners.has(listener)) continue;
+          listener(dispatched);
+        }
+      } while (!Object.is(value, dispatched)); // a reentrant set → dispatch again
+    } finally {
+      notifying = false;
+    }
     return value;
   };
 

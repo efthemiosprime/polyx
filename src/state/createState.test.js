@@ -91,6 +91,31 @@ describe('createState — subscription', () => {
     expect(typeof off).toBe('function');
     expect(() => off()).not.toThrow();
   });
+
+  it('delivers a consistent, in-order value to every subscriber when one setStates mid-dispatch', () => {
+    const store = createState(0);
+    const seen = [];
+    store.subscribe((v) => { seen.push(['A', v]); if (v === 1) store.set(2); });
+    store.subscribe((v) => { seen.push(['B', v]); });
+
+    store.set(1);
+
+    // Every subscriber must see 1 before 2, and neither value may be skipped or
+    // duplicated. (Reentrant set(2) must re-dispatch, not interleave.)
+    expect(seen).toEqual([['A', 1], ['B', 1], ['A', 2], ['B', 2]]);
+  });
+
+  it('does not notify a listener unsubscribed by another listener during dispatch', () => {
+    const store = createState(0);
+    const calls = [];
+    let offB;
+    store.subscribe(() => { calls.push('A'); offB(); }); // A removes B
+    offB = store.subscribe(() => calls.push('B'));
+
+    store.set(1);
+
+    expect(calls).toEqual(['A']); // B was removed before it could be called
+  });
 });
 
 describe('createState — object API', () => {
