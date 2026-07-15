@@ -18,6 +18,14 @@ describe('ArrayTransform collection ops', () => {
     expect(grouped).toEqual({ odd: [1, 3, 5], even: [2, 4] });
   });
 
+  // Regression: keys that collide with Object.prototype members must not break.
+  it('groupBy handles keys that collide with Object.prototype', () => {
+    const grouped = ArrayTransform.from(['a', 'b', 'c'])
+      .groupBy(s => (s === 'b' ? 'constructor' : 'toString'));
+    expect(grouped.toString).toEqual(['a', 'c']);
+    expect(grouped.constructor).toEqual(['b']);
+  });
+
   it('partition splits into [pass, fail]', () => {
     const [pass, fail] = ArrayTransform.from([1, 2, 3, 4])
       .partition(n => n % 2 === 0);

@@ -3,6 +3,7 @@
 import {
   Maybe,
   Either,
+  Validation,
   ArrayTransform,
   IO,
   Task,
@@ -51,6 +52,16 @@ const uniq = at.unique().take(2).drop(1).toArray();
 const last: Maybe<number> = at.last();
 const empty: boolean = at.isEmpty();
 
+// --- Validation ---
+const build = (n: string) => (e: string) => ({ n, e });
+// `ap` is intentionally loosely typed (like Maybe/Either/Task), so annotate the
+// expected result type to drive it.
+const form: Validation<string, { n: string; e: string }> = Validation.of<string, typeof build>(build)
+  .ap(Validation.Success<string, string>('a'))
+  .ap(Validation.fail<string>('bad'));
+const formE: Either<string[], { n: string; e: string }> = form.toEither();
+const fromE: Validation<string, number> = Validation.fromEither(Either.Right(1));
+
 // --- interop / lazy defaults ---
 const toE: Either<string, number> = Maybe.of(1).toEither('missing');
 const toM: Maybe<number> = Either.Right(1).toMaybe();
@@ -82,5 +93,6 @@ const el = getElement('.x');
 // touch everything so the fixture stays valid regardless of noUnusedLocals
 void [folded, or, apM, chained, wrapped, bi, apE, recovered, sum, first, flat,
   single, atChained, grouped, pass, fail, uniq, last, empty, toE, toM, lazyM, lazyE,
+  form, formE, fromE,
   f, g, id, seven, isOdd, cond, io, task, flat2, title, getter, inView, pos, el,
   CoreMaybe, DataFlatten, DomScroll, AsyncIO];

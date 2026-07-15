@@ -68,6 +68,33 @@ export const Either: {
 };
 
 // ---------------------------------------------------------------------------
+// core / Validation (applicative, accumulates errors)
+// ---------------------------------------------------------------------------
+
+export interface Validation<E, A> {
+  readonly isSuccess: boolean;
+  readonly isFailure: boolean;
+  /** The success value for a Success, or the errors array for a Failure. */
+  readonly value: A | E[];
+  map<B>(fn: (value: A) => B): Validation<E, B>;
+  mapFailure<E2>(fn: (errors: E[]) => E2[]): Validation<E2, A>;
+  bimap<E2, B>(onFailure: (errors: E[]) => E2[], onSuccess: (value: A) => B): Validation<E2, B>;
+  /** Applicative apply — accumulates errors. Valid when A is `(x: X) => B`. */
+  ap<X, B>(other: Validation<E, X>): Validation<E, B>;
+  fold<R>(onFailure: (errors: E[]) => R, onSuccess: (value: A) => R): R;
+  getOrElse<U>(defaultValue: U): A | U;
+  toEither(): Either<E[], A>;
+}
+
+export const Validation: {
+  Success<E, A>(value: A): Validation<E, A>;
+  Failure<E, A = never>(errors: E[]): Validation<E, A>;
+  of<E, A>(value: A): Validation<E, A>;
+  fail<E>(error: E): Validation<E, never>;
+  fromEither<L, R>(either: Either<L, R>): Validation<L, R>;
+};
+
+// ---------------------------------------------------------------------------
 // core / ArrayTransform
 // ---------------------------------------------------------------------------
 
@@ -218,6 +245,41 @@ export function path(obj: any): PathAccessor;
 export function getPath(pathStr: PathKey): (obj: any) => any;
 export function makePath(...parts: Array<string | null | undefined>): string;
 
+export function setPath(pathStr: PathKey, value: any): (obj: any) => any;
+export function updatePath(
+  pathStr: PathKey,
+  fn: (current: any) => any
+): (obj: any) => any;
+export function dissocPath(pathStr: PathKey): (obj: any) => any;
+export function getPathMaybe(pathStr: PathKey): (obj: any) => Maybe<any>;
+export function getPathOr<D>(defaultValue: D, pathStr: PathKey): (obj: any) => any;
+
+export interface Lens<S, A> {
+  get(s: S): A;
+  set(a: A, s: S): S;
+}
+export function lens<S, A>(
+  getter: (s: S) => A,
+  setter: (a: A, s: S) => S
+): Lens<S, A>;
+export function lensProp(key: string | number): Lens<any, any>;
+export function lensPath(pathStr: PathKey): Lens<any, any>;
+export function lensIndex(index: number): Lens<any[], any>;
+export function composeLens(...lenses: Array<Lens<any, any>>): Lens<any, any>;
+export function view<S, A>(l: Lens<S, A>): (obj: S) => A;
+export function set<S, A>(l: Lens<S, A>, value: A): (obj: S) => S;
+export function over<S, A>(l: Lens<S, A>, fn: (a: A) => A): (obj: S) => S;
+
+export function unflatten(map: Record<string, any>, delimiter?: string): Record<string, any>;
+export function pick<K extends string | number>(keys: K[]): (obj: any) => Record<string, any>;
+export function omit<K extends string | number>(keys: K[]): (obj: any) => Record<string, any>;
+export function mergeDeep(a: object, b: object): Record<string, any>;
+export function mergeDeepWith(
+  fn: (aVal: any, bVal: any) => any,
+  a: object,
+  b: object
+): Record<string, any>;
+
 // ---------------------------------------------------------------------------
 // dom / isInView, scrollManager, utils
 // ---------------------------------------------------------------------------
@@ -282,6 +344,79 @@ export function addEvent(
   handler: EventListenerOrEventListenerObject,
   options?: boolean | AddEventListenerOptions
 ): (element: Element) => Maybe<Element>;
+export function on(
+  event: string,
+  handler: EventListenerOrEventListenerObject,
+  options?: boolean | AddEventListenerOptions
+): (element: Element | null | undefined) => () => void;
+export function delegate(
+  parent: Element | null | undefined,
+  event: string,
+  selector: string,
+  handler: (event: Event, matchedElement: Element) => void
+): () => void;
+export function onIntersect(
+  target: string | Element | NodeListOf<Element> | Element[] | null | undefined,
+  callback: IntersectionObserverCallback,
+  options?: IntersectionObserverInit
+): () => void;
+export function onResize(
+  target: string | Element | NodeListOf<Element> | Element[] | null | undefined,
+  callback: ResizeObserverCallback,
+  options?: ResizeObserverOptions
+): () => void;
+export function onMutation(
+  target: string | Element | NodeListOf<Element> | Element[] | null | undefined,
+  callback: MutationCallback,
+  options?: MutationObserverInit
+): () => void;
+export function ready(): Task<never, Document | undefined>;
+
+// ---------------------------------------------------------------------------
+// dom / pure lazy DOM ops (domIO) + functional element construction
+// ---------------------------------------------------------------------------
+
+type Nullable<T> = T | null | undefined;
+
+export interface DomIO {
+  query(selector: string, parent?: Element): IO<Element | null>;
+  queryAll(selector: string, parent?: Element): IO<Element[]>;
+  addClass(className: string): (element: Nullable<Element>) => IO<Nullable<Element>>;
+  removeClass(className: string): (element: Nullable<Element>) => IO<Nullable<Element>>;
+  toggleClass(
+    className: string,
+    force?: boolean
+  ): (element: Nullable<Element>) => IO<Nullable<Element>>;
+  setStyle(
+    property: string,
+    value: string
+  ): (element: Nullable<Element>) => IO<Nullable<Element>>;
+  setHtml(html: string): (element: Nullable<Element>) => IO<Nullable<Element>>;
+  setText(text: string): (element: Nullable<Element>) => IO<Nullable<Element>>;
+  setAttr(
+    name: string,
+    value: string
+  ): (element: Nullable<Element>) => IO<Nullable<Element>>;
+  removeAttr(name: string): (element: Nullable<Element>) => IO<Nullable<Element>>;
+  remove(): (element: Nullable<Element>) => IO<Nullable<Element>>;
+}
+
+export const domIO: DomIO;
+
+export function create(
+  tag: string,
+  props?: Record<string, unknown>,
+  children?: string | Node | Array<string | Node>
+): IO<Element>;
+export function setStyle(
+  property: string,
+  value: string
+): (element: Element) => Maybe<Element>;
+export function getStyle(
+  property: string
+): (element: Element) => Maybe<string>;
+export function setHtml(html: string): (element: Element) => Maybe<Element>;
+export function setText(text: string): (element: Element) => Maybe<Element>;
 
 // ---------------------------------------------------------------------------
 // namespace re-exports (import * as core from '@efthemiosprime/polyx')

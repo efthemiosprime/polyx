@@ -13,6 +13,7 @@ These pages exist today:
 - [Core Overview](./core/README.md)
 - [Maybe Monad](./core/maybe.md)
 - [Either Monad](./core/either.md)
+- [Validation](./core/validation.md)
 - [Task](./core/task.md)
 - [Compose & Combinators](./core/compose.md)
 - [when](./core/when.md)
@@ -20,6 +21,11 @@ These pages exist today:
 - [isInView](./core/is-inview.md)
 - [scrollManager](./core/scroll-manager.md)
 - [State (createState)](./core/state.md)
+- [Immutable Nested Updates](./core/data-paths.md)
+- [Lenses](./core/lenses.md)
+- [Structural Transforms](./core/data-transform.md)
+- [DOM Events & Observers](./core/dom-events.md)
+- [Pure DOM (domIO & create)](./core/dom-io.md)
 
 ---
 
