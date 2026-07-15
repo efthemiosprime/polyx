@@ -16,6 +16,8 @@ export const ScrollManager = (() => {
       const subscribers = new Set();
       let isRunning = false;
       let scrollY = 0;
+      let lastScrollY = 0;
+      let currentDirection = 'down';
       let ticking = false;
       
       // State for one-time triggers
@@ -30,9 +32,10 @@ export const ScrollManager = (() => {
         
         window.addEventListener('scroll', handleScroll, { passive: true });
         isRunning = true;
-        
+
         // Initial scroll position
         scrollY = window.scrollY;
+        lastScrollY = scrollY;
         // Don't notify subscribers initially - wait for actual scroll
       };
       
@@ -53,7 +56,12 @@ export const ScrollManager = (() => {
        */
       const handleScroll = () => {
         scrollY = window.scrollY;
-        
+
+        // Compute direction once, here, where scrollY actually changes.
+        // (Reads elsewhere must not mutate this baseline.)
+        currentDirection = scrollY > lastScrollY ? 'down' : 'up';
+        lastScrollY = scrollY;
+
         // Mark that actual scrolling has occurred
         oneTimeTriggers.forEach(trigger => {
           if (trigger.requireActualScroll) {
@@ -78,10 +86,10 @@ export const ScrollManager = (() => {
       const notifySubscribers = () => {
         const scrollData = {
           y: scrollY,
-          direction: detectScrollDirection(),
+          direction: currentDirection,
           timestamp: Date.now()
         };
-        
+
         // Regular subscribers
         subscribers.forEach(subscriber => {
           // Call subscriber with scroll data
@@ -192,18 +200,6 @@ export const ScrollManager = (() => {
             }
           }
         });
-      };
-      
-      /**
-       * Detect scroll direction (up or down)
-       * @private
-       * @returns {string} 'up' or 'down'
-       */
-      let lastScrollY = scrollY;
-      const detectScrollDirection = () => {
-        const direction = scrollY > lastScrollY ? 'down' : 'up';
-        lastScrollY = scrollY;
-        return direction;
       };
       
       /**
@@ -359,7 +355,7 @@ export const ScrollManager = (() => {
        */
       const getScrollPosition = () => ({
         y: scrollY,
-        direction: detectScrollDirection(),
+        direction: currentDirection,
         timestamp: Date.now()
       });
       
