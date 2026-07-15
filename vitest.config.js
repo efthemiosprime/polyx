@@ -3,12 +3,10 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    // Pure modules run in Node for speed; DOM-touching modules run in jsdom.
+    // Pure modules run in Node for speed. DOM-touching test files opt into jsdom
+    // with a `// @vitest-environment jsdom` docblock at the top of the file
+    // (environmentMatchGlobs was deprecated in Vitest 3).
     environment: 'node',
-    environmentMatchGlobs: [
-      ['src/dom/**', 'jsdom'],
-      ['**/*.dom.test.js', 'jsdom'],
-    ],
     include: ['src/**/*.{test,spec}.js'],
     coverage: {
       include: ['src/**/*.js'],
