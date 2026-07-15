@@ -44,8 +44,17 @@ const user = client.query({
   fetcher: () => fetchJson('/api/users/42'),  // Promise OR Task
 });
 const off = user.subscribe((s) => render(s));
-// s: { status:'idle'|'loading'|'success'|'error', data, error, isFetching, isStale, updatedAt }
+// s: { status, data, error, isFetching, isStale, updatedAt }
+//   status: 'idle' | 'loading' (no data yet) | 'success' | 'error';
+//   a background refetch keeps status 'success' with isFetching: true.
 user.refetch();
+
+// Dependent query — doesn't fetch until `enabled` is true
+const orders = client.query({
+  key: ['orders', user.select((s) => s.data?.id)],
+  fetcher: () => fetchJson(`/api/orders?u=${user.getState().data.id}`),
+  enabled: user.getState().status === 'success',
+});
 
 // GraphQL — same machinery, different fetcher
 const feed = client.query({
@@ -78,8 +87,37 @@ Load-bearing facts every step must honor:
   a new `types/query.d.ts`, with a `./query` subpath in `package.json` (vite
   auto-discovers `src/query/` as a build entry). `tsc --noEmit` must pass.
 - **Tests run in Node.** Query timing (staleTime, retry backoff) needs
-  `vi.useFakeTimers()`; unit tests pass a **mock fetcher function** (no network);
+  `vi.useFakeTimers()` + **`vi.advanceTimersByTimeAsync(...)`** (not the sync
+  variant) — because `Task.fromPromise` resolves on a microtask that must be
+  flushed *between* timer ticks. Basic success/error flows use real timers and a
+  microtask flush. Unit tests pass a **mock fetcher** (no network);
   `fetchJson`/`gqlFetcher` tests stub `global.fetch`.
+
+## 3b. Resolved semantics & contracts (from the roadmap gap review)
+
+Decisions the first implementation forced, now pinned down:
+
+- **Fetch trigger = eager on `query()`** (not on first subscribe), for MVP
+  simplicity. Consequence: a query created but never subscribed still fetches once.
+  Each entry **counts subscribers** from day one (even though GC is Tier 3) so the
+  eventual eviction has the hook it needs.
+- **Key serialization contract.** Keys must be **JSON-serializable**; the hash is
+  `JSON.stringify` with **object keys sorted recursively**, so `{a,b}` and `{b,a}`
+  collide correctly. Non-serializable values (functions, `Date`, `undefined`,
+  `Map`/`Set`) are unsupported and will produce unstable or colliding hashes —
+  documented, not silently handled.
+- **Dedupe vs. force (the race rule).** An **auto** fetch (from `query()`)
+  **dedupes** — if one is in flight, it piggybacks. A **forced** fetch (`refetch`
+  or `invalidate`) always starts a **new** fetch that **supersedes** the in-flight
+  one: each fetch takes a monotonic id and only the latest may commit; a late
+  superseded response is dropped. This is the only path where "ignore superseded
+  responses" actually fires, and it's the correctness core.
+- **`status` semantics.** `'loading'` **only when there is no data yet**; a
+  background refetch of already-loaded data stays `'success'` with
+  `isFetching: true`. `error` keeps the last `data` intact.
+- **Known MVP limitation:** the cache **grows unbounded** — no entry is ever
+  evicted until Tier 3 GC. Called out explicitly so it isn't mistaken for
+  complete.
 
 ## 4. Design principles
 
@@ -101,13 +139,19 @@ Load-bearing facts every step must honor:
 
 - **`createQueryClient(options?)`** — owns a cache (`Map` keyed by a serialized
   query key) and defaults (`staleTime`, `retry`, `retryDelay`).
-- **`client.query({ key, fetcher, staleTime?, retry? })`** → a subscribable store
-  with `{ status, data, error, isFetching, isStale, updatedAt }`, plus
-  `refetch()` and `subscribe(fn) → unsubscribe`. Reads cache; refetches when
-  stale; **dedupes** in-flight; **ignores superseded responses** (race-safety).
+- **`client.query({ key, fetcher, staleTime?, retry?, enabled? })`** → a
+  subscribable store with `{ status, data, error, isFetching, isStale, updatedAt }`,
+  plus `getState()`, `refetch()`, `select(fn)`, and `subscribe(fn) → unsubscribe`
+  (which increments a per-entry **subscriber count** — the GC hook). Reads cache;
+  refetches when stale; **dedupes** auto-fetches; **supersedes** on force (§3b).
+  **`enabled: false`** defers fetching (dependent queries) until flipped true.
 - **`client.invalidate(keyOrPredicate)`** — mark matching entries stale and
-  refetch those with live subscribers.
-- **Retry with backoff** in the fetch runner (Task has none — §3a).
+  refetch. Key match is **prefix** for arrays (`['user']` matches `['user', 42]`)
+  or a predicate over the key.
+- **`client.setQueryData(key, dataOrUpdater)`** — write the cache directly
+  (needed by Tier 2 optimistic updates; cheap to land here).
+- **Retry** (constant delay for MVP; `retry` is a count) in the fetch runner
+  (Task has none — §3a). `retry: (n, err) => boolean` is a later refinement (§H).
 - **`fetchJson(url, init?)`** — REST helper (throws on non-2xx, parses JSON).
 - **`gqlFetcher(url, query, variables?)`** — GraphQL POST; throws on `errors[]`.
 
@@ -118,8 +162,9 @@ Load-bearing facts every step must honor:
 
 - **`client.mutation({ mutationFn, onSuccess?, onError?, onSettled? })`** → a store
   with `{ status, data, error }` and `mutate(vars)`.
-- **Optimistic updates** — apply an immediate cache patch (via the data module's
-  `setPath`/lenses when present), roll back on error.
+- **Optimistic updates** — patch the cache immediately via `setQueryData`
+  (landed in Tier 1) + the data module's `setPath`/lenses, snapshot the prior
+  value, and roll back on error.
 - Invalidate related keys on success.
 
 ### Tier 3 — lifecycle & scale
