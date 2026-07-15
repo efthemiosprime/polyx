@@ -4,3 +4,4 @@ export { setPath, updatePath, dissocPath, getPathMaybe, getPathOr } from './upda
 export {
   lens, lensProp, lensPath, lensIndex, view, set, over, composeLens,
 } from './lens.js';
+export { unflatten, pick, omit, mergeDeep, mergeDeepWith } from './transform.js';

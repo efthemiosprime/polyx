@@ -9,6 +9,7 @@ export { setPath, updatePath, dissocPath, getPathMaybe, getPathOr } from './data
 export {
   lens, lensProp, lensPath, lensIndex, view, set, over, composeLens,
 } from './data/lens.js';
+export { unflatten, pick, omit, mergeDeep, mergeDeepWith } from './data/transform.js';
 export { IO } from './async/io.js';
 export { Task } from './async/task.js';
 export { 

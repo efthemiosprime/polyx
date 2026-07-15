@@ -21,6 +21,7 @@ These pages exist today:
 - [scrollManager](./core/scroll-manager.md)
 - [Immutable Nested Updates](./core/data-paths.md)
 - [Lenses](./core/lenses.md)
+- [Structural Transforms](./core/data-transform.md)
 
 ---
 

@@ -229,6 +229,16 @@ export function view<S, A>(l: Lens<S, A>): (obj: S) => A;
 export function set<S, A>(l: Lens<S, A>, value: A): (obj: S) => S;
 export function over<S, A>(l: Lens<S, A>, fn: (a: A) => A): (obj: S) => S;
 
+export function unflatten(map: Record<string, any>, delimiter?: string): Record<string, any>;
+export function pick<K extends string | number>(keys: K[]): (obj: any) => Record<string, any>;
+export function omit<K extends string | number>(keys: K[]): (obj: any) => Record<string, any>;
+export function mergeDeep(a: object, b: object): Record<string, any>;
+export function mergeDeepWith(
+  fn: (aVal: any, bVal: any) => any,
+  a: object,
+  b: object
+): Record<string, any>;
+
 // ---------------------------------------------------------------------------
 // dom / isInView, scrollManager, utils
 // ---------------------------------------------------------------------------
