@@ -321,7 +321,7 @@ export function onMutation(
   callback: MutationCallback,
   options?: MutationObserverInit
 ): () => void;
-export function ready(): Task<never, Document>;
+export function ready(): Task<never, Document | undefined>;
 
 // ---------------------------------------------------------------------------
 // dom / pure lazy DOM ops (domIO) + functional element construction

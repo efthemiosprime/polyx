@@ -158,6 +158,14 @@ export const on = (event, handler, options) => (element) => {
   return () => element.removeEventListener(event, handler, options);
 };
 
+// Events that do NOT bubble, so a bubble-phase delegated listener on an ancestor
+// would never see them. Delegation for these must run in the capture phase
+// (which always traverses ancestors regardless of bubbling).
+const NON_BUBBLING_EVENTS = new Set([
+  'focus', 'blur', 'mouseenter', 'mouseleave', 'load', 'unload',
+  'error', 'abort', 'scroll',
+]);
+
 /**
  * Delegates an event: attaches a single listener on `parent` and invokes
  * `handler` only when the event originates from a descendant matching `selector`.
@@ -169,6 +177,9 @@ export const on = (event, handler, options) => (element) => {
  * still contained by `parent`). Null-safe — a missing parent is a no-op that
  * returns a callable cleanup.
  *
+ * Non-bubbling events (`focus`, `blur`, `mouseenter`, `mouseleave`, …) are
+ * delegated via the capture phase automatically, so they work like any other.
+ *
  * @param {Element} parent - Container element the listener is bound to
  * @param {string} event - Event name (e.g. 'click')
  * @param {string} selector - CSS selector a descendant must match
@@ -179,6 +190,8 @@ export const delegate = (parent, event, selector, handler) => {
   if (!parent || typeof parent.addEventListener !== 'function') {
     return () => {};
   }
+  // Capture phase for non-bubbling events; the same flag must be used to remove.
+  const capture = NON_BUBBLING_EVENTS.has(event);
   const listener = (e) => {
     const target = e.target;
     if (!target || typeof target.closest !== 'function') return;
@@ -187,6 +200,6 @@ export const delegate = (parent, event, selector, handler) => {
       handler(e, match);
     }
   };
-  parent.addEventListener(event, listener);
-  return () => parent.removeEventListener(event, listener);
+  parent.addEventListener(event, listener, capture);
+  return () => parent.removeEventListener(event, listener, capture);
 };

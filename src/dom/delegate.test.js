@@ -58,6 +58,38 @@ describe('delegate', () => {
     expect(handler).not.toHaveBeenCalled();
   });
 
+  it('fires for non-bubbling events like focus (capture phase)', () => {
+    const parent = mount('<div><input class="field"></div>');
+    const handler = vi.fn();
+
+    delegate(parent, 'focus', '.field', handler);
+    // focus does not bubble — a bubble-phase delegated listener never sees it.
+    parent.querySelector('.field').dispatchEvent(new Event('focus'));
+
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('fires for mouseenter (non-bubbling) on a matching descendant', () => {
+    const parent = mount('<ul><li class="item">a</li></ul>');
+    const handler = vi.fn();
+
+    delegate(parent, 'mouseenter', '.item', handler);
+    parent.querySelector('.item').dispatchEvent(new Event('mouseenter'));
+
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('cleanup removes a capture-phase delegated listener', () => {
+    const parent = mount('<div><input class="field"></div>');
+    const handler = vi.fn();
+
+    const cleanup = delegate(parent, 'focus', '.field', handler);
+    cleanup();
+    parent.querySelector('.field').dispatchEvent(new Event('focus'));
+
+    expect(handler).not.toHaveBeenCalled();
+  });
+
   it('is null-safe for a missing parent', () => {
     const handler = vi.fn();
     const cleanup = delegate(null, 'click', '.item', handler);

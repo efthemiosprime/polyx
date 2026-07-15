@@ -16,7 +16,8 @@ import { Task } from '../async/task.js';
  *   (doc) => enhance(doc.querySelectorAll('[data-widget]'))
  * );
  *
- * @returns {import('../async/task.js').Task} Task<never, Document>
+ * @returns {import('../async/task.js').Task} Task<never, Document | undefined>
+ *   (resolves with `undefined` only in a non-DOM environment)
  */
 export const ready = () =>
   Task((_reject, resolve) => {
