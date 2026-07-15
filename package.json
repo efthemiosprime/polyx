@@ -32,6 +32,10 @@
       "types": "./types/state.d.ts",
       "import": "./dist/esm/state.js"
     },
+    "./query": {
+      "types": "./types/query.d.ts",
+      "import": "./dist/esm/query.js"
+    },
     "./advanced": {
       "import": "./dist/esm/advanced.js"
     }

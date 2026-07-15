@@ -220,6 +220,62 @@ export type StateStore<T> = [() => T, (next: StateUpdater<T>) => T] & {
 export function createState<T>(initial: T): StateStore<T>;
 
 // ---------------------------------------------------------------------------
+// query / createQueryClient + fetchers
+// ---------------------------------------------------------------------------
+
+export type QueryStatus = 'idle' | 'loading' | 'success' | 'error';
+
+export interface QueryState<T> {
+  status: QueryStatus;
+  data: T | undefined;
+  error: unknown;
+  isFetching: boolean;
+  isStale: boolean;
+  updatedAt: number;
+}
+
+export interface QueryHandle<T> {
+  key: unknown;
+  getState(): QueryState<T>;
+  subscribe(listener: (state: QueryState<T>) => void): () => void;
+  refetch(): void;
+  select<R>(selector: (state: QueryState<T>) => R): R;
+}
+
+export interface QueryOptions<T> {
+  key: unknown;
+  fetcher: () => Promise<T> | Task<unknown, T> | T;
+  staleTime?: number;
+  retry?: number;
+  retryDelay?: number;
+  enabled?: boolean;
+}
+
+export interface QueryClientOptions {
+  staleTime?: number;
+  retry?: number;
+  retryDelay?: number;
+}
+
+export interface QueryClient {
+  query<T>(options: QueryOptions<T>): QueryHandle<T>;
+  invalidate(filter: unknown | ((key: any) => boolean)): void;
+  setQueryData<T>(key: unknown, data: T | ((prev: T | undefined) => T)): T;
+  getQueryData<T>(key: unknown): T | undefined;
+  clear(): void;
+}
+
+export function createQueryClient(options?: QueryClientOptions): QueryClient;
+
+export function fetchJson<T = any>(url: string, init?: RequestInit): Promise<T>;
+export function gqlFetcher<T = any>(
+  url: string,
+  query: string,
+  variables?: Record<string, unknown>,
+  init?: RequestInit
+): () => Promise<T>;
+
+// ---------------------------------------------------------------------------
 // data / flatten & path
 // ---------------------------------------------------------------------------
 

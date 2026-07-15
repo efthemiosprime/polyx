@@ -17,6 +17,8 @@ export { unflatten, pick, omit, mergeDeep, mergeDeepWith } from './data/transfor
 export { IO } from './async/io.js';
 export { Task } from './async/task.js';
 export { createState } from './state/createState.js';
+export { createQueryClient } from './query/createQueryClient.js';
+export { fetchJson, gqlFetcher } from './query/fetchers.js';
 export {
   getElement,
   getElements,
@@ -52,4 +54,5 @@ export * as core from './core/index.js';
 export * as dom from './dom/index.js';
 export * as async from './async/index.js';
 export * as state from './state/index.js';
+export * as query from './query/index.js';
 // export * as advanced from './advanced/index.js';
