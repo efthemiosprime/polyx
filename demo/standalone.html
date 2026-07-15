@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PolyX — state + data + dom (standalone)</title>
+  <style>
+    :root {
+      --bg: #0f1220; --panel: #181c2e; --panel-2: #1f2440; --line: #2c3358;
+      --text: #e7e9f5; --muted: #98a0c8; --accent: #7c9cff; --accent-2: #57e0a8;
+      --danger: #ff6b81;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(1200px 600px at 70% -10%, #232a4d 0%, var(--bg) 60%);
+      color: var(--text); min-height: 100vh; padding: 32px 16px 120px;
+    }
+    .wrap { max-width: 620px; margin: 0 auto; }
+    h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -0.02em; }
+    .sub { color: var(--muted); margin: 0 0 24px; }
+    .sub code { color: var(--accent); background: #ffffff0d; padding: 1px 6px; border-radius: 6px; }
+    .card {
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border: 1px solid var(--line); border-radius: 16px; padding: 18px;
+      box-shadow: 0 20px 60px -30px #000;
+    }
+    form { display: flex; gap: 8px; margin-bottom: 14px; }
+    input[type=text] {
+      flex: 1; background: #0d1024; border: 1px solid var(--line); color: var(--text);
+      padding: 11px 14px; border-radius: 10px; outline: none; font-size: 15px;
+    }
+    input[type=text]:focus { border-color: var(--accent); }
+    button { cursor: pointer; font: inherit; border: 1px solid var(--line);
+      background: #ffffff0d; color: var(--text); border-radius: 10px; padding: 10px 14px; }
+    button:hover { border-color: var(--accent); }
+    .add { background: var(--accent); color: #0b0e1f; border-color: transparent; font-weight: 600; }
+    #filters { display: flex; gap: 8px; margin: 4px 0 14px; }
+    #filters button { padding: 6px 12px; font-size: 13px; color: var(--muted); }
+    #filters button.active { color: #0b0e1f; background: var(--accent-2); border-color: transparent; font-weight: 600; }
+    ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    .todo {
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+      background: #0d1024; border: 1px solid var(--line); border-radius: 10px;
+      opacity: 0; transform: translateY(8px); transition: opacity .35s ease, transform .35s ease;
+    }
+    .todo.shown { opacity: 1; transform: none; }
+    .todo .text { flex: 1; }
+    .todo.done .text { text-decoration: line-through; color: var(--muted); }
+    .todo .toggle, .todo .delete { border: none; background: transparent; padding: 4px; font-size: 15px; }
+    .todo .delete { color: var(--danger); opacity: .6; }
+    .todo .delete:hover { opacity: 1; }
+    .bar { display: flex; justify-content: space-between; align-items: center;
+      margin-top: 14px; color: var(--muted); font-size: 13px; }
+    .legend { margin-top: 22px; display: grid; gap: 8px; }
+    .legend div { display: flex; gap: 10px; align-items: baseline; }
+    .tag { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+    .tag.state { background: #7c9cff22; color: var(--accent); }
+    .tag.data  { background: #57e0a822; color: var(--accent-2); }
+    .tag.dom   { background: #ffb86c22; color: #ffb86c; }
+    .legend small { color: var(--muted); }
+    .empty { color: var(--muted); text-align: center; padding: 18px; }
+    .note { color: var(--muted); font-size: 12px; margin-top: 18px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>PolyX Todo</h1>
+    <p class="sub">One list wired with <code>createState</code> + <code>setPath</code>/lenses + <code>on</code>/<code>delegate</code>/<code>onIntersect</code>.</p>
+
+    <div class="card">
+      <form id="add-form">
+        <input id="new-todo" type="text" placeholder="Add a task and press Enter…" autocomplete="off" />
+        <button class="add" type="submit">Add</button>
+      </form>
+
+      <div id="filters">
+        <button data-filter="all">All</button>
+        <button data-filter="active">Active</button>
+        <button data-filter="done">Done</button>
+      </div>
+
+      <ul id="list"></ul>
+      <div id="empty" class="empty" hidden>Nothing here — add a task above.</div>
+
+      <div class="bar">
+        <span id="count">0 left</span>
+        <button id="clear-done">Clear completed</button>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div><span class="tag state">state</span> <small><code>createState</code> holds <code>{ todos, filter }</code>; <code>subscribe</code> re-renders on every change.</small></div>
+      <div><span class="tag data">data</span> <small><code>setPath</code> / <code>updatePath</code> / <code>over(lensPath(…))</code> update nested state immutably.</small></div>
+      <div><span class="tag dom">dom</span> <small><code>on</code> (submit), <code>delegate</code> (list &amp; filter clicks — covers future items), <code>onIntersect</code> (reveal animation).</small></div>
+    </div>
+
+    <p class="note">Standalone build — the PolyX functions below are inlined so this file runs by double-click (no server). The module version is <code>index.html</code> (needs <code>http://</code>).</p>
+  </div>
+
+  <!-- Classic script: no ES-module imports, so it runs from file:// with no CORS. -->
+  <script>
+  (function () {
+    'use strict';
+
+    // ── Inlined PolyX subset (verbatim from src/) ─────────────────────────────
+
+    // state: src/state/createState.js
+    function createState(initial) {
+      let value = initial;
+      const listeners = new Set();
+      let notifying = false;
+      const get = () => value;
+      const set = (next) => {
+        const resolved = typeof next === 'function' ? next(value) : next;
+        if (Object.is(resolved, value)) return value;
+        value = resolved;
+        if (notifying) return value;
+        notifying = true;
+        try {
+          let dispatched, passes = 0;
+          do {
+            if (++passes > 1000) throw new Error('createState: state did not converge');
+            dispatched = value;
+            for (const listener of [...listeners]) {
+              if (!listeners.has(listener)) continue;
+              listener(dispatched);
+            }
+          } while (!Object.is(value, dispatched));
+        } finally { notifying = false; }
+        return value;
+      };
+      const subscribe = (listener) => {
+        if (typeof listener !== 'function') return () => {};
+        listeners.add(listener);
+        return () => { listeners.delete(listener); };
+      };
+      const store = [get, set];
+      store.get = get; store.set = set; store.subscribe = subscribe;
+      return store;
+    }
+
+    // data: src/data/update.js (subset)
+    const toKeys = (p) => Array.isArray(p) ? p : String(p).split('.').filter(Boolean);
+    const isIndex = (k) => typeof k === 'number' || /^\d+$/.test(k);
+    const cloneFor = (node, key) => {
+      if (Array.isArray(node)) return node.slice();
+      if (node !== null && typeof node === 'object') return { ...node };
+      return isIndex(key) ? [] : {};
+    };
+    const getIn = (keys, obj) => {
+      let cur = obj;
+      for (const k of keys) { if (cur == null) return undefined; cur = cur[Array.isArray(cur) ? Number(k) : k]; }
+      return cur;
+    };
+    const setIn = (keys, val, obj) => {
+      if (keys.length === 0) return val;
+      const [key, ...rest] = keys;
+      const container = cloneFor(obj, key);
+      const idx = Array.isArray(container) ? Number(key) : key;
+      container[idx] = setIn(rest, val, container[idx]);
+      return container;
+    };
+    const setPath = (p, val) => (obj) => setIn(toKeys(p), val, obj);
+    const updatePath = (p, fn) => (obj) => { const keys = toKeys(p); return setIn(keys, fn(getIn(keys, obj)), obj); };
+    const getPathOr = (def, p) => (obj) => { const f = getIn(toKeys(p), obj); return f === undefined ? def : f; };
+
+    // data: src/data/lens.js (subset)
+    const lens = (g, s) => ({ get: g, set: s });
+    const lensPath = (p) => lens((s) => getPathOr(undefined, p)(s), (a, s) => setPath(p, a)(s));
+    const over = (l, fn) => (obj) => l.set(fn(l.get(obj)), obj);
+
+    // dom: src/dom/utils.js (subset)
+    const NON_BUBBLING = new Set(['focus','blur','mouseenter','mouseleave','load','unload','error','abort','scroll']);
+    const on = (event, handler, options) => (el) => {
+      if (!el || typeof el.addEventListener !== 'function') return () => {};
+      el.addEventListener(event, handler, options);
+      return () => el.removeEventListener(event, handler, options);
+    };
+    const delegate = (parent, event, selector, handler) => {
+      if (!parent || typeof parent.addEventListener !== 'function') return () => {};
+      const capture = NON_BUBBLING.has(event);
+      const listener = (e) => {
+        const t = e.target;
+        if (!t || typeof t.closest !== 'function') return;
+        const m = t.closest(selector);
+        if (m && parent.contains(m)) handler(e, m);
+      };
+      parent.addEventListener(event, listener, capture);
+      return () => parent.removeEventListener(event, listener, capture);
+    };
+
+    // dom: src/dom/observers.js (subset)
+    const toElements = (target) => {
+      if (!target) return [];
+      if (typeof target === 'string') return Array.from(document.querySelectorAll(target));
+      if (typeof Element !== 'undefined' && target instanceof Element) return [target];
+      if (typeof target.length === 'number') return Array.from(target).filter(Boolean);
+      return [];
+    };
+    const onIntersect = (target, cb, options) => {
+      if (typeof IntersectionObserver === 'undefined') return () => {};
+      const els = toElements(target);
+      if (els.length === 0) return () => {};
+      const obs = new IntersectionObserver(cb, options);
+      els.forEach((el) => obs.observe(el));
+      return () => obs.disconnect();
+    };
+
+    // ── App (identical logic to demo/app.js) ─────────────────────────────────
+
+    const store = createState({
+      todos: [
+        { id: 1, text: 'Learn createState', done: true },
+        { id: 2, text: 'Update nested state with setPath / lenses', done: false },
+        { id: 3, text: 'Wire events with on + delegate', done: false },
+      ],
+      filter: 'all',
+      nextId: 4,
+    });
+    const [state, setState] = store;
+
+    const addTodo = (text) =>
+      setState((s) =>
+        setPath('nextId', s.nextId + 1)(
+          updatePath('todos', (ts) => [...ts, { id: s.nextId, text, done: false }])(s)
+        )
+      );
+    const toggleTodo = (id) =>
+      setState((s) => {
+        const i = s.todos.findIndex((t) => t.id === id);
+        return i < 0 ? s : over(lensPath(['todos', i, 'done']), (d) => !d)(s);
+      });
+    const removeTodo = (id) =>
+      setState(updatePath('todos', (ts) => ts.filter((t) => t.id !== id)));
+    const clearDone = () =>
+      setState(updatePath('todos', (ts) => ts.filter((t) => !t.done)));
+    const setFilter = (filter) => setState(setPath('filter', filter));
+
+    const visible = (s) =>
+      s.filter === 'active' ? s.todos.filter((t) => !t.done)
+      : s.filter === 'done' ? s.todos.filter((t) => t.done)
+      : s.todos;
+    const remaining = (s) => s.todos.filter((t) => !t.done).length;
+
+    const $ = (sel) => document.querySelector(sel);
+    const listEl = $('#list');
+    const emptyEl = $('#empty');
+    const countEl = $('#count');
+    const filtersEl = $('#filters');
+    let offReveal = () => {};
+
+    const render = (s) => {
+      const items = visible(s);
+      listEl.innerHTML = '';
+      for (const t of items) {
+        const li = document.createElement('li');
+        li.className = 'todo' + (t.done ? ' done' : '');
+        li.dataset.id = String(t.id);
+        li.innerHTML =
+          `<button class="toggle" aria-label="toggle">${t.done ? '✅' : '⬜️'}</button>` +
+          `<span class="text"></span>` +
+          `<button class="delete" aria-label="delete">✕</button>`;
+        li.querySelector('.text').textContent = t.text;
+        listEl.appendChild(li);
+      }
+      emptyEl.hidden = items.length > 0;
+      countEl.textContent = `${remaining(s)} left`;
+      for (const b of filtersEl.querySelectorAll('button')) {
+        b.classList.toggle('active', b.dataset.filter === s.filter);
+      }
+      offReveal();
+      offReveal = onIntersect('#list .todo', (entries, obs) => {
+        for (const e of entries) {
+          if (e.isIntersecting) { e.target.classList.add('shown'); obs.unobserve(e.target); }
+        }
+      }, { threshold: 0.05 });
+    };
+
+    store.subscribe(render);
+
+    on('submit', (e) => {
+      e.preventDefault();
+      const input = $('#new-todo');
+      const text = input.value.trim();
+      if (!text) return;
+      addTodo(text);
+      input.value = '';
+    })($('#add-form'));
+
+    delegate(listEl, 'click', '.toggle', (_e, btn) => toggleTodo(Number(btn.closest('.todo').dataset.id)));
+    delegate(listEl, 'click', '.delete', (_e, btn) => removeTodo(Number(btn.closest('.todo').dataset.id)));
+    delegate(filtersEl, 'click', 'button', (_e, btn) => setFilter(btn.dataset.filter));
+    on('click', clearDone)($('#clear-done'));
+
+    render(state());
+  })();
+  </script>
+</body>
+</html>

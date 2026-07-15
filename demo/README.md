@@ -5,16 +5,23 @@ A tiny, framework-free **Todo app** that wires the three modules together —
 
 ## Run it
 
-From the repo root, serve the folder over HTTP (ES modules need `http://`, not
-`file://`):
+Two files, two ways:
+
+**`index.html`** — the real integration demo. It imports the library straight from
+`../src/**` as ES modules, so it must be served over HTTP (browsers block module
+`import` from `file://` — every `file://` page is a unique origin):
 
 ```bash
 python3 -m http.server 8347
 # then open http://localhost:8347/demo/index.html
 ```
 
-Any static server works (`npx serve`, `php -S`, etc.). The demo imports the
-library straight from `../src/**` as ES modules — no bundler required.
+Any static server works (`npx serve`, `php -S`, etc.) — no bundler required.
+
+**`standalone.html`** — a zero-setup copy you can **double-click** (opens from
+`file://`). It inlines the small subset of PolyX the demo uses in a classic
+`<script>`, so there are no imports to be blocked. Same app, same behavior — handy
+for sharing a single file.
 
 ## What each module does here
 
