@@ -7,6 +7,7 @@ This document provides detailed information about the core modules and functions
 - [Core Modules](#core-modules)
   - [Maybe](#maybe)
   - [Either](#either)
+  - [Validation](#validation)
   - [ArrayTransform](#arraytransform)
   - [Compose](#compose)
   - [When](#when)
@@ -100,6 +101,25 @@ import { Either } from '@efthemiosprime/polyx';
 | `getOrElse(defaultValue)` | Returns Right value or default. | `c -> b \| c` | `result.getOrElse(0)` |
 | `getOrElseGet(fn)` | Lazy `getOrElse` — the thunk runs only for a Left. | `(() -> c) -> b \| c` | `result.getOrElseGet(() => load())` |
 | `toMaybe()` | Left → Nothing, Right → Just. | `() -> Maybe<b>` | `result.toMaybe()` |
+
+### [Validation](./validation.md)
+
+Like `Either`, but `ap` **accumulates** errors instead of short-circuiting — collect
+*all* failures (e.g. every invalid form field) in one pass. Applicative, not a monad
+(no `chain`). See the [full Validation guide](./validation.md).
+
+```javascript
+import { Validation } from '@efthemiosprime/polyx';
+```
+
+| Method | Description | Signature |
+|--------|-------------|-----------|
+| `Validation.Success(v)` / `Validation.Failure(errors)` | Success value / failure with an **array** of errors. | `a -> V<e,a>` / `e[] -> V<e,a>` |
+| `Validation.of(v)` / `Validation.fail(e)` | Pure Success / single-error Failure. | `a -> V<e,a>` / `e -> V<e,never>` |
+| `map(fn)` / `mapFailure(fn)` / `bimap(f, g)` | Transform the success / error / either side. | — |
+| `ap(other)` | **Applicative apply — accumulates errors.** | `V<e,x> -> V<e,b>` |
+| `fold(onFail, onOk)` / `getOrElse(d)` | Collapse / extract with default. | — |
+| `toEither()` / `Validation.fromEither(e)` | Convert to/from `Either`. | — |
 
 ### [ArrayTransform](./array-transform.md)
 

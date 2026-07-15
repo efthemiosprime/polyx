@@ -1,5 +1,6 @@
 export { Maybe } from './maybe.js';
 export { Either } from './either.js';
+export { Validation } from './validation.js';
 export { ArrayTransform } from './arrayTransform.js';
 export {
   compose,

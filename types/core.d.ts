@@ -1,6 +1,7 @@
 export {
   Maybe,
   Either,
+  Validation,
   ArrayTransform,
   compose,
   tap,

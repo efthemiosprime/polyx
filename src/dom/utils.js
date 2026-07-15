@@ -120,8 +120,11 @@ export const setText = (text) => (element) =>
     });
 
 /**
- * Adds an event listener to an element safely
- * 
+ * Adds an event listener to an element safely.
+ *
+ * @deprecated Returns the element, so the listener can never be removed (it
+ * leaks). Prefer {@link on}, which returns a cleanup function.
+ *
  * @param {string} event - Event name
  * @param {Function} handler - Event handler function
  * @param {Object|boolean} [options] - Event listener options
@@ -133,3 +136,70 @@ export const addEvent = (event, handler, options) => (element) =>
       el.addEventListener(event, handler, options);
       return el;
     });
+
+/**
+ * Attaches an event listener and returns a cleanup function that removes it.
+ *
+ * Prefer this over {@link addEvent}: it lets you tear the listener down (matching
+ * the unsubscribe convention used by `scrollManager`), where `addEvent` returns
+ * the element and leaks the listener. Null-safe — a missing element is a no-op
+ * that still returns a valid cleanup, never a throw.
+ *
+ * @param {string} event - Event name
+ * @param {Function} handler - Event handler function
+ * @param {Object|boolean} [options] - Event listener options
+ * @returns {Function} Function that takes an element and returns a cleanup function
+ */
+export const on = (event, handler, options) => (element) => {
+  if (!element || typeof element.addEventListener !== 'function') {
+    return () => {};
+  }
+  element.addEventListener(event, handler, options);
+  return () => element.removeEventListener(event, handler, options);
+};
+
+// Events that do NOT bubble, so a bubble-phase delegated listener on an ancestor
+// would never see them. Delegation for these must run in the capture phase
+// (which always traverses ancestors regardless of bubbling).
+const NON_BUBBLING_EVENTS = new Set([
+  'focus', 'blur', 'mouseenter', 'mouseleave', 'load', 'unload',
+  'error', 'abort', 'scroll',
+]);
+
+/**
+ * Delegates an event: attaches a single listener on `parent` and invokes
+ * `handler` only when the event originates from a descendant matching `selector`.
+ *
+ * Because the listener lives on the parent, it automatically covers elements
+ * added *after* it is set up — ideal for enhancing DOM a CMS/framework injects
+ * later. The handler receives `(event, matchedElement)`, where `matchedElement`
+ * is the closest ancestor of the event target that matches `selector` (and is
+ * still contained by `parent`). Null-safe — a missing parent is a no-op that
+ * returns a callable cleanup.
+ *
+ * Non-bubbling events (`focus`, `blur`, `mouseenter`, `mouseleave`, …) are
+ * delegated via the capture phase automatically, so they work like any other.
+ *
+ * @param {Element} parent - Container element the listener is bound to
+ * @param {string} event - Event name (e.g. 'click')
+ * @param {string} selector - CSS selector a descendant must match
+ * @param {Function} handler - Called with (event, matchedElement)
+ * @returns {Function} Cleanup function that removes the listener
+ */
+export const delegate = (parent, event, selector, handler) => {
+  if (!parent || typeof parent.addEventListener !== 'function') {
+    return () => {};
+  }
+  // Capture phase for non-bubbling events; the same flag must be used to remove.
+  const capture = NON_BUBBLING_EVENTS.has(event);
+  const listener = (e) => {
+    const target = e.target;
+    if (!target || typeof target.closest !== 'function') return;
+    const match = target.closest(selector);
+    if (match && parent.contains(match)) {
+      handler(e, match);
+    }
+  };
+  parent.addEventListener(event, listener, capture);
+  return () => parent.removeEventListener(event, listener, capture);
+};

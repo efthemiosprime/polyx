@@ -62,9 +62,11 @@
     "theory",
     "monad",
     "functor",
+    "applicative",
     "compose",
     "either",
     "maybe",
+    "validation",
     "io",
     "task"
   ],
