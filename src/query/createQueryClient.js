@@ -79,6 +79,7 @@ export const createQueryClient = (defaults = {}) => {
     staleTime: defStale = 0,
     retry: defRetry = 0,
     retryDelay: defDelay = 1000,
+    cacheTime: defCache = 5 * 60 * 1000,
   } = defaults;
 
   const cache = new Map(); // hash -> entry
@@ -94,10 +95,14 @@ export const createQueryClient = (defaults = {}) => {
         staleTime: defStale,
         retry: defRetry,
         retryDelay: defDelay,
+        cacheTime: defCache,
+        refetchInterval: 0,
         enabled: true,
         fetchId: 0,
         fetching: false,
-        subscribers: 0, // GC hook for a future Tier 3
+        subscribers: 0,
+        gcTimer: null,
+        intervalId: null,
       };
       cache.set(hash, entry);
     }
@@ -109,7 +114,42 @@ export const createQueryClient = (defaults = {}) => {
     if (o.staleTime !== undefined) entry.staleTime = o.staleTime;
     if (o.retry !== undefined) entry.retry = o.retry;
     if (o.retryDelay !== undefined) entry.retryDelay = o.retryDelay;
+    if (o.cacheTime !== undefined) entry.cacheTime = o.cacheTime;
+    if (o.refetchInterval !== undefined) entry.refetchInterval = o.refetchInterval;
     if (o.enabled !== undefined) entry.enabled = o.enabled;
+  };
+
+  const isStaleNow = (entry) => {
+    const s = entry.store.get();
+    return s.isStale ||
+      (entry.staleTime !== Infinity && Date.now() - s.updatedAt >= entry.staleTime);
+  };
+
+  // --- garbage collection: evict entries with no subscribers after cacheTime ---
+  const cancelGC = (entry) => {
+    if (entry.gcTimer) { clearTimeout(entry.gcTimer); entry.gcTimer = null; }
+  };
+  const scheduleGC = (entry) => {
+    if (entry.cacheTime === Infinity) return;
+    cancelGC(entry);
+    entry.gcTimer = setTimeout(() => {
+      if (entry.subscribers === 0 && !entry.fetching) {
+        stopInterval(entry);
+        cache.delete(entry.hash);
+      }
+    }, entry.cacheTime);
+  };
+  const maybeScheduleGC = (entry) => {
+    if (entry.subscribers === 0 && !entry.fetching) scheduleGC(entry);
+  };
+
+  // --- polling: refetch on an interval while the query has subscribers ---
+  const startInterval = (entry) => {
+    if (entry.intervalId || !entry.refetchInterval) return;
+    entry.intervalId = setInterval(() => runFetch(entry, { force: true }), entry.refetchInterval);
+  };
+  const stopInterval = (entry) => {
+    if (entry.intervalId) { clearInterval(entry.intervalId); entry.intervalId = null; }
   };
 
   // Only the latest fetch (by id) may commit — drops superseded responses.
@@ -117,6 +157,7 @@ export const createQueryClient = (defaults = {}) => {
     if (id !== entry.fetchId) return;
     entry.fetching = false;
     entry.store.set((s) => ({ ...s, ...patch }));
+    maybeScheduleGC(entry); // an unsubscribed query becomes eligible for GC once settled
   };
 
   const runFetch = (entry, { force = false } = {}) => {
@@ -154,8 +195,13 @@ export const createQueryClient = (defaults = {}) => {
     getState: () => entry.store.get(),
     subscribe: (fn) => {
       entry.subscribers += 1;
+      if (entry.subscribers === 1) { cancelGC(entry); startInterval(entry); }
       const off = entry.store.subscribe(fn);
-      return () => { entry.subscribers -= 1; off(); };
+      return () => {
+        entry.subscribers -= 1;
+        off();
+        if (entry.subscribers === 0) { stopInterval(entry); scheduleGC(entry); }
+      };
     },
     refetch: () => runFetch(entry, { force: true }),
     select: (selector) => selector(entry.store.get()),
@@ -165,7 +211,42 @@ export const createQueryClient = (defaults = {}) => {
     const entry = ensureEntry(options.key);
     applyOptions(entry, options);
     if (entry.enabled) runFetch(entry); // eager on query()
+    maybeScheduleGC(entry); // if nothing fetched/subscribed, still becomes GC-eligible
     return makeHandle(entry);
+  };
+
+  /** Fetch into the cache without returning a handle; resolves when settled. */
+  const prefetch = (options) => {
+    const entry = ensureEntry(options.key);
+    applyOptions(entry, options);
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        off();
+        maybeScheduleGC(entry);
+        resolve(entry.store.get().data);
+      };
+      const off = entry.store.subscribe((st) => {
+        if (!entry.fetching && (st.status === 'success' || st.status === 'error')) finish();
+      });
+      if (entry.enabled) runFetch(entry);
+      if (!entry.fetching) finish(); // nothing to wait for (fresh / disabled / no fetcher)
+    });
+  };
+
+  /**
+   * Refetch every stale query that currently has subscribers. Wire this to any
+   * signal you like — `window` focus, `online`, a manual "refresh" — keeping the
+   * client itself framework-free.
+   */
+  const refetchStale = () => {
+    for (const entry of cache.values()) {
+      if (entry.subscribers > 0 && entry.enabled && entry.fetcher && isStaleNow(entry)) {
+        runFetch(entry, { force: true });
+      }
+    }
   };
 
   const invalidate = (filter) => {
@@ -241,7 +322,13 @@ export const createQueryClient = (defaults = {}) => {
     };
   };
 
-  const clear = () => cache.clear();
+  const clear = () => {
+    for (const entry of cache.values()) { cancelGC(entry); stopInterval(entry); }
+    cache.clear();
+  };
 
-  return { query, mutation, invalidate, setQueryData, getQueryData, clear };
+  return {
+    query, mutation, prefetch, refetchStale,
+    invalidate, setQueryData, getQueryData, clear,
+  };
 };

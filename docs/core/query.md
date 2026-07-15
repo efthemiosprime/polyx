@@ -81,8 +81,32 @@ and `select(fn)` (derive from the current state — a lens `view` works as the f
   one.
 - **Cache key contract.** Keys must be JSON-serializable; non-serializable values
   (functions, `Date`, `Map`) produce unstable hashes.
-- **Known limitation (MVP):** the cache is **not evicted** — every unique key stays
-  cached for the client's lifetime. (Garbage collection is planned.)
+- **Garbage collection.** An entry with no subscribers is evicted `cacheTime` ms
+  after its last subscriber leaves (default 5 min; `Infinity` disables). Attaching
+  a subscriber cancels a pending eviction.
+
+## Lifecycle & polling
+
+| Option / method | Description |
+|-----------------|-------------|
+| `cacheTime` (client or per-query) | ms an unsubscribed entry lingers before GC (default `300_000`). |
+| `refetchInterval` (per-query) | Poll: refetch every N ms **while the query has subscribers**; stops on the last unsubscribe. |
+| `client.prefetch(options)` | Warm the cache without a handle; returns a promise that resolves when the fetch settles. |
+| `client.refetchStale()` | Refetch every **stale** query that has subscribers. Wire it to any signal — the client stays framework-free. |
+
+```javascript
+// Poll a live dashboard every 10s while it's on screen
+const stats = client.query({ key: ['stats'], fetcher: getStats, refetchInterval: 10_000 });
+const off = stats.subscribe(render);   // polling starts
+// off();                              // polling stops, entry GC'd after cacheTime
+
+// Warm the cache before navigation
+await client.prefetch({ key: ['user', 42], fetcher: () => fetchJson('/api/users/42') });
+
+// Refresh stale data when the tab regains focus / the network returns
+window.addEventListener('focus', () => client.refetchStale());
+window.addEventListener('online', () => client.refetchStale());
+```
 
 ## Real-World Examples
 

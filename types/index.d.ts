@@ -248,6 +248,8 @@ export interface QueryOptions<T> {
   staleTime?: number;
   retry?: number;
   retryDelay?: number;
+  cacheTime?: number;
+  refetchInterval?: number;
   enabled?: boolean;
 }
 
@@ -255,6 +257,7 @@ export interface QueryClientOptions {
   staleTime?: number;
   retry?: number;
   retryDelay?: number;
+  cacheTime?: number;
 }
 
 export interface MutationOptions<T, V, C> {
@@ -287,6 +290,8 @@ export interface MutationHandle<T, V> {
 export interface QueryClient {
   query<T>(options: QueryOptions<T>): QueryHandle<T>;
   mutation<T, V = void, C = unknown>(config: MutationOptions<T, V, C>): MutationHandle<T, V>;
+  prefetch<T>(options: QueryOptions<T>): Promise<T | undefined>;
+  refetchStale(): void;
   invalidate(filter: unknown | ((key: any) => boolean)): void;
   setQueryData<T>(key: unknown, data: T | ((prev: T | undefined) => T)): T;
   getQueryData<T>(key: unknown): T | undefined;
