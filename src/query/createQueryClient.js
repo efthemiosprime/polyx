@@ -190,7 +190,58 @@ export const createQueryClient = (defaults = {}) => {
     return entry ? entry.store.get().data : undefined;
   };
 
+  const MUTATION_INITIAL = {
+    status: 'idle', data: undefined, error: undefined, isLoading: false, variables: undefined,
+  };
+
+  /**
+   * Create a mutation — a store over an async write with lifecycle callbacks.
+   *
+   * `onMutate(vars)` runs first and its return value becomes the `context` passed
+   * to `onSuccess` / `onError` / `onSettled` — the hook for optimistic updates and
+   * rollback. `mutate(vars)` returns a promise that resolves with the data on
+   * success or `undefined` on failure (the error is reflected in the store).
+   */
+  const mutation = (config) => {
+    const {
+      mutationFn,
+      onMutate, onSuccess, onError, onSettled,
+      retry = defRetry, retryDelay = defDelay,
+    } = config;
+
+    const store = createState({ ...MUTATION_INITIAL });
+    let callId = 0; // only the latest mutate may write the store
+
+    const mutate = async (variables) => {
+      const id = ++callId;
+      store.set((s) => ({ ...s, status: 'loading', isLoading: true, variables, error: undefined }));
+
+      let context;
+      try {
+        context = onMutate ? await onMutate(variables) : undefined;
+        const data = await new Promise((resolve, reject) =>
+          withRetry(() => mutationFn(variables), retry, retryDelay).fork(reject, resolve));
+        if (onSuccess) await onSuccess(data, variables, context);
+        if (id === callId) store.set((s) => ({ ...s, status: 'success', data, isLoading: false }));
+        if (onSettled) await onSettled(data, undefined, variables, context);
+        return data;
+      } catch (error) {
+        if (onError) await onError(error, variables, context);
+        if (id === callId) store.set((s) => ({ ...s, status: 'error', error, isLoading: false }));
+        if (onSettled) await onSettled(undefined, error, variables, context);
+        return undefined;
+      }
+    };
+
+    return {
+      mutate,
+      getState: () => store.get(),
+      subscribe: (fn) => store.subscribe(fn),
+      reset: () => store.set(() => ({ ...MUTATION_INITIAL })),
+    };
+  };
+
   const clear = () => cache.clear();
 
-  return { query, invalidate, setQueryData, getQueryData, clear };
+  return { query, mutation, invalidate, setQueryData, getQueryData, clear };
 };

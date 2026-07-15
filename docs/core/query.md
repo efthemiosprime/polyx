@@ -136,6 +136,52 @@ function toggleDone(id) {
 }
 ```
 
+## Mutations
+
+`client.mutation(config)` wraps an async write (create/update/delete) in a store
+with lifecycle callbacks.
+
+```javascript
+const addTodo = client.mutation({
+  mutationFn: (text) => fetchJson('/api/todos', {
+    method: 'POST', body: JSON.stringify({ text }),
+  }),
+  onSuccess: () => client.invalidate(['todos']), // refetch the list
+});
+
+addTodo.subscribe((s) => renderButton(s));       // { status, data, error, isLoading, variables }
+await addTodo.mutate('Ship it');                  // resolves data (or undefined on error)
+addTodo.reset();
+```
+
+**Config:** `mutationFn(vars)` (returns Promise | Task | value) plus optional
+`onMutate` / `onSuccess` / `onError` / `onSettled`, and `retry` / `retryDelay`.
+
+**Lifecycle:** `onMutate(vars)` runs first and its return value becomes the
+**`context`** passed to the later callbacks — the hook for optimistic updates and
+rollback. On success: `onSuccess(data, vars, context)` → `onSettled(data, undefined,
+…)`. On failure: `onError(error, vars, context)` → `onSettled(undefined, error, …)`.
+`mutate(vars)` resolves with the data on success or `undefined` on failure (the
+error is reflected in the store, never thrown).
+
+### Optimistic mutation with rollback
+
+```javascript
+const toggle = client.mutation({
+  mutationFn: (id) => fetchJson(`/api/todos/${id}/toggle`, { method: 'POST' }),
+  onMutate: (id) => {
+    const prev = client.getQueryData(['todos']);            // snapshot for rollback
+    client.setQueryData(['todos'], (list) =>
+      list.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
+    return { prev };                                        // becomes `context`
+  },
+  onError: (_err, _id, ctx) => client.setQueryData(['todos'], ctx.prev), // roll back
+  onSettled: () => client.invalidate(['todos']),            // reconcile with server
+});
+
+toggle.mutate(42); // UI flips instantly; rolls back if the request fails
+```
+
 ### Drive the DOM (with the state/dom modules)
 
 ```javascript

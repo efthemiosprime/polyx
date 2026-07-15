@@ -8,4 +8,7 @@ export {
   QueryHandle,
   QueryState,
   QueryStatus,
+  MutationOptions,
+  MutationHandle,
+  MutationState,
 } from './index';

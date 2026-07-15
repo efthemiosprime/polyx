@@ -257,8 +257,36 @@ export interface QueryClientOptions {
   retryDelay?: number;
 }
 
+export interface MutationOptions<T, V, C> {
+  mutationFn: (variables: V) => Promise<T> | Task<unknown, T> | T;
+  onMutate?: (variables: V) => C | Promise<C>;
+  onSuccess?: (data: T, variables: V, context: C) => void | Promise<void>;
+  onError?: (error: unknown, variables: V, context: C | undefined) => void | Promise<void>;
+  onSettled?: (
+    data: T | undefined, error: unknown, variables: V, context: C | undefined
+  ) => void | Promise<void>;
+  retry?: number;
+  retryDelay?: number;
+}
+
+export interface MutationState<T, V> {
+  status: QueryStatus;
+  data: T | undefined;
+  error: unknown;
+  isLoading: boolean;
+  variables: V | undefined;
+}
+
+export interface MutationHandle<T, V> {
+  mutate(variables: V): Promise<T | undefined>;
+  getState(): MutationState<T, V>;
+  subscribe(listener: (state: MutationState<T, V>) => void): () => void;
+  reset(): void;
+}
+
 export interface QueryClient {
   query<T>(options: QueryOptions<T>): QueryHandle<T>;
+  mutation<T, V = void, C = unknown>(config: MutationOptions<T, V, C>): MutationHandle<T, V>;
   invalidate(filter: unknown | ((key: any) => boolean)): void;
   setQueryData<T>(key: unknown, data: T | ((prev: T | undefined) => T)): T;
   getQueryData<T>(key: unknown): T | undefined;
