@@ -20,6 +20,10 @@ These pages exist today:
 - [ArrayTransform](./core/array-transform.md)
 - [isInView](./core/is-inview.md)
 - [scrollManager](./core/scroll-manager.md)
+- [State (createState)](./core/state.md)
+- [Immutable Nested Updates](./core/data-paths.md)
+- [Lenses](./core/lenses.md)
+- [Structural Transforms](./core/data-transform.md)
 - [DOM Events & Observers](./core/dom-events.md)
 - [Pure DOM (domIO & create)](./core/dom-io.md)
 

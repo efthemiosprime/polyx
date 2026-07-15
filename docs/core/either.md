@@ -79,6 +79,9 @@ propagates unchanged.
 | `getOrElseGet(fn)` | Lazy `getOrElse` — the thunk runs only for a `Left`. | `(() -> c) -> b \| c` |
 | `toMaybe()` | Drop the error side: `Left` → Nothing, `Right` → Just. | `() -> Maybe<b>` |
 
+> **Note:** `toMaybe()` inherits `Maybe`'s null limitation — a `Right(null)` or
+> `Right(undefined)` becomes a `Nothing`. Use it when the `Right` is a genuine present value.
+
 ## Real-World Examples
 
 ### Validation chain (railway-oriented)

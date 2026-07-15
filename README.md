@@ -20,6 +20,7 @@ Available sections:
 - [Installation Guide](/docs/installation.md)
 - [Quick Start](/docs/quick-start.md)
 - [Core Modules](/docs/core)
+- Nested data: [Nested Updates](/docs/core/data-paths.md), [Lenses](/docs/core/lenses.md), [Structural Transforms](/docs/core/data-transform.md)
 
 For the full picture — including planned sections — see the [Documentation Table of Contents](/docs/README.md).
 
@@ -123,6 +124,32 @@ fetchUser(123)
   );
 ```
 
+### Nested Data
+Read, transform, and rebuild deeply nested data immutably — without lodash or a
+proxy runtime. Safe reads, immutable writes with structural sharing, composable
+lenses, and object-shaping helpers, all curried and `Maybe`-aware.
+
+```javascript
+import { getPathMaybe, setPath, over, lensPath, mergeDeep } from '@efthemiosprime/polyx';
+
+// Safe read, no null-checks
+getPathMaybe('user.address.city')(res).getOrElse('Unknown');
+
+// Immutable deep update (original untouched, untouched subtrees shared)
+setPath('user.settings.theme', 'dark')(state);
+
+// A reusable, composable focus
+const upcaseName = over(lensPath('user.name'), s => s.toUpperCase());
+upcaseName({ user: { name: 'ada' } }); // { user: { name: 'ADA' } }
+
+// Merge a server response over defaults
+mergeDeep({ theme: 'light', layout: { width: 240 } }, { layout: { width: 320 } });
+// { theme: 'light', layout: { width: 320 } }
+```
+
+See the guides: [Nested Updates](/docs/core/data-paths.md) ·
+[Lenses](/docs/core/lenses.md) · [Structural Transforms](/docs/core/data-transform.md).
+
 ## Learning Path
 
 PolyX is organized to help you learn functional programming concepts incrementally.
@@ -147,7 +174,7 @@ Practical examples showing how these concepts apply to real-world problems:
 - DOM manipulation using the IO monad *(available)*
 - API clients using Task *(available)*
 - Form validation using Validation/Either *(roadmap — Validation not yet implemented)*
-- State management using the State monad *(roadmap — State not yet implemented)*
+- State management with `createState` — a React-like `[state, setState]` container *(available)*
 
 ## Educational Resources
 

@@ -27,12 +27,14 @@ const wrap = value => ({
   },
   // Terminal reductions/queries.
   reduce: (fn, ...initial) => value.reduce(fn, ...initial),
-  // Group items into a plain object keyed by fn(item) (keys are stringified).
+  // Group items into an object keyed by fn(item) (keys are stringified). Uses a
+  // null-prototype object so keys like 'toString'/'__proto__' can't collide with
+  // Object.prototype members.
   groupBy: fn => value.reduce((acc, item) => {
     const key = fn(item);
     (acc[key] = acc[key] || []).push(item);
     return acc;
-  }, {}),
+  }, Object.create(null)),
   // Split into [pass, fail] based on a predicate.
   partition: pred => {
     const pass = [];
