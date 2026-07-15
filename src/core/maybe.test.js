@@ -78,4 +78,57 @@ describe('Maybe', () => {
       expect(Maybe.of(5).map(id).value).toBe(Maybe.of(5).value);
     });
   });
+
+  describe('fold', () => {
+    it('runs onJust for a value', () => {
+      expect(Maybe.of(5).fold(() => 'nothing', (x) => `just:${x}`)).toBe('just:5');
+    });
+    it('runs onNothing for Nothing', () => {
+      expect(Maybe.of(null).fold(() => 'nothing', (x) => `just:${x}`)).toBe('nothing');
+    });
+  });
+
+  describe('orElse', () => {
+    it('keeps the value for a Just', () => {
+      expect(Maybe.of(5).orElse(() => Maybe.of(99)).value).toBe(5);
+    });
+    it('uses the alternative for a Nothing', () => {
+      expect(Maybe.of(null).orElse(() => Maybe.of(99)).value).toBe(99);
+    });
+    it('is lazy: the thunk is not called for a Just', () => {
+      const fn = vi.fn(() => Maybe.of(99));
+      Maybe.of(5).orElse(fn);
+      expect(fn).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('ap', () => {
+    it('applies a Just(fn) to a Just(value)', () => {
+      expect(Maybe.of((x) => x + 1).ap(Maybe.of(9)).value).toBe(10);
+    });
+    it('is Nothing if the function side is Nothing', () => {
+      expect(Maybe.of(null).ap(Maybe.of(9)).isNothing).toBe(true);
+    });
+    it('is Nothing if the value side is Nothing', () => {
+      expect(Maybe.of((x) => x + 1).ap(Maybe.of(null)).isNothing).toBe(true);
+    });
+  });
+
+  describe('monad laws', () => {
+    const val = (m) => m.getOrElse('__nothing__');
+
+    it('left identity: of(a).chain(f) = f(a)', () => {
+      const f = (x) => Maybe.of(x + 1);
+      expect(val(Maybe.of(3).chain(f))).toBe(val(f(3)));
+    });
+    it('right identity: m.chain(of) = m', () => {
+      expect(val(Maybe.of(3).chain(Maybe.of))).toBe(val(Maybe.of(3)));
+    });
+    it('associativity', () => {
+      const f = (x) => Maybe.of(x + 1);
+      const g = (x) => Maybe.of(x * 2);
+      expect(val(Maybe.of(3).chain(f).chain(g)))
+        .toBe(val(Maybe.of(3).chain((x) => f(x).chain(g))));
+    });
+  });
 });

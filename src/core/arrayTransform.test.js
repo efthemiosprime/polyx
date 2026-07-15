@@ -34,4 +34,53 @@ describe('ArrayTransform', () => {
   it('accepts any iterable via Array.from', () => {
     expect(ArrayTransform.from(new Set([1, 2, 2, 3])).toArray()).toEqual([1, 2, 3]);
   });
+
+  describe('reduce', () => {
+    it('folds with an initial value', () => {
+      expect(ArrayTransform.from([1, 2, 3, 4]).reduce((acc, x) => acc + x, 0)).toBe(10);
+    });
+    it('folds without an initial value', () => {
+      expect(ArrayTransform.from([1, 2, 3, 4]).reduce((acc, x) => acc + x)).toBe(10);
+    });
+  });
+
+  describe('flatMap', () => {
+    it('maps and flattens one level, chainably', () => {
+      const result = ArrayTransform.from([1, 2, 3])
+        .flatMap((x) => [x, x * 10])
+        .toArray();
+      expect(result).toEqual([1, 10, 2, 20, 3, 30]);
+    });
+  });
+
+  describe('find', () => {
+    it('returns a Just of the first match', () => {
+      const found = ArrayTransform.from([1, 2, 3, 4]).find((x) => x > 2);
+      expect(found.isNothing).toBe(false);
+      expect(found.value).toBe(3);
+    });
+    it('returns Nothing when there is no match', () => {
+      expect(ArrayTransform.from([1, 2]).find((x) => x > 5).isNothing).toBe(true);
+    });
+  });
+
+  describe('head', () => {
+    it('returns a Just of the first element', () => {
+      expect(ArrayTransform.from([9, 8, 7]).head().value).toBe(9);
+    });
+    it('returns Nothing for an empty collection', () => {
+      expect(ArrayTransform.from([]).head().isNothing).toBe(true);
+    });
+  });
+
+  describe('some / every', () => {
+    it('some checks any element', () => {
+      expect(ArrayTransform.from([1, 2, 3]).some((x) => x === 2)).toBe(true);
+      expect(ArrayTransform.from([1, 2, 3]).some((x) => x === 9)).toBe(false);
+    });
+    it('every checks all elements', () => {
+      expect(ArrayTransform.from([2, 4, 6]).every((x) => x % 2 === 0)).toBe(true);
+      expect(ArrayTransform.from([2, 3, 6]).every((x) => x % 2 === 0)).toBe(false);
+    });
+  });
 });

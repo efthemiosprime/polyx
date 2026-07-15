@@ -1,5 +1,16 @@
 import { describe, it, expect, vi } from 'vitest';
-import { compose, pipe, curry, tap, when, ifElse, evolve } from './compose.js';
+import {
+  compose,
+  pipe,
+  curry,
+  tap,
+  when,
+  ifElse,
+  evolve,
+  identity,
+  always,
+  complement,
+} from './compose.js';
 
 const double = (x) => x * 2;
 const addOne = (x) => x + 1;
@@ -77,5 +88,44 @@ describe('evolve', () => {
     const result = evolve('a', double)(input);
     expect(result).toEqual({ a: 2, b: 2 });
     expect(input).toEqual({ a: 1, b: 2 });
+  });
+});
+
+describe('identity', () => {
+  it('returns its argument unchanged', () => {
+    expect(identity(42)).toBe(42);
+    const obj = {};
+    expect(identity(obj)).toBe(obj);
+  });
+
+  it('makes ifElse(p, f, identity) equivalent to when(p, f)', () => {
+    const p = (x) => x % 2 === 0;
+    const viaIfElse = ifElse(p, double, identity);
+    const viaWhen = when(p, double);
+    expect(viaIfElse(4)).toBe(viaWhen(4));
+    expect(viaIfElse(5)).toBe(viaWhen(5));
+  });
+});
+
+describe('always', () => {
+  it('returns a function that always yields the same value', () => {
+    const seven = always(7);
+    expect(seven()).toBe(7);
+    expect(seven('ignored', 'args')).toBe(7);
+  });
+});
+
+describe('complement', () => {
+  it('negates a predicate', () => {
+    const isEven = (x) => x % 2 === 0;
+    const isOdd = complement(isEven);
+    expect(isOdd(3)).toBe(true);
+    expect(isOdd(4)).toBe(false);
+  });
+
+  it('forwards all arguments', () => {
+    const gt = (a, b) => a > b;
+    const notGt = complement(gt);
+    expect(notGt(2, 5)).toBe(true);
   });
 });

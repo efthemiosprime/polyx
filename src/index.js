@@ -18,12 +18,15 @@ export {
 
 export {
   compose,
-  tap, 
-  pipe, 
-  curry, 
-  when, 
-  ifElse, 
-  evolve 
+  tap,
+  pipe,
+  curry,
+  when,
+  ifElse,
+  evolve,
+  identity,
+  always,
+  complement
 } from './core/compose.js';
 
 

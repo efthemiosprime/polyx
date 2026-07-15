@@ -103,7 +103,33 @@ export const compose = (...fns) => {
     ...obj,
     [prop]: fn(obj[prop])
   });
-  
+
+  /**
+   * The identity function: returns its argument unchanged.
+   * Handy as the "else" branch of `ifElse`, i.e. `ifElse(p, f, identity) === when(p, f)`.
+   *
+   * @param {*} x
+   * @returns {*} x
+   */
+  export const identity = (x) => x;
+
+  /**
+   * Creates a function that always returns the same value, ignoring its arguments
+   * (a.k.a. `const`/`K`).
+   *
+   * @param {*} x - The value to always return
+   * @returns {Function} A function that returns `x`
+   */
+  export const always = (x) => () => x;
+
+  /**
+   * Creates the logical negation of a predicate.
+   *
+   * @param {Function} predicate - Predicate to negate
+   * @returns {Function} A predicate that returns the opposite boolean
+   */
+  export const complement = (predicate) => (...args) => !predicate(...args);
+
   // Examples:
   //
   // // Simple composition
