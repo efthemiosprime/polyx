@@ -295,6 +295,31 @@ export function addEvent(
   handler: EventListenerOrEventListenerObject,
   options?: boolean | AddEventListenerOptions
 ): (element: Element) => Maybe<Element>;
+export function on(
+  event: string,
+  handler: EventListenerOrEventListenerObject,
+  options?: boolean | AddEventListenerOptions
+): (element: Element | null | undefined) => () => void;
+export function delegate(
+  parent: Element | null | undefined,
+  event: string,
+  selector: string,
+  handler: (event: Event, matchedElement: Element) => void
+): () => void;
+export function onIntersect(
+  target: string | Element | NodeListOf<Element> | Element[] | null | undefined,
+  callback: IntersectionObserverCallback,
+  options?: IntersectionObserverInit
+): () => void;
+export function setStyle(
+  property: string,
+  value: string
+): (element: Element) => Maybe<Element>;
+export function getStyle(
+  property: string
+): (element: Element) => Maybe<string>;
+export function setHtml(html: string): (element: Element) => Maybe<Element>;
+export function setText(text: string): (element: Element) => Maybe<Element>;
 
 // ---------------------------------------------------------------------------
 // namespace re-exports (import * as core from '@efthemiosprime/polyx')

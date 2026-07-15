@@ -133,3 +133,57 @@ export const addEvent = (event, handler, options) => (element) =>
       el.addEventListener(event, handler, options);
       return el;
     });
+
+/**
+ * Attaches an event listener and returns a cleanup function that removes it.
+ *
+ * Prefer this over {@link addEvent}: it lets you tear the listener down (matching
+ * the unsubscribe convention used by `scrollManager`), where `addEvent` returns
+ * the element and leaks the listener. Null-safe — a missing element is a no-op
+ * that still returns a valid cleanup, never a throw.
+ *
+ * @param {string} event - Event name
+ * @param {Function} handler - Event handler function
+ * @param {Object|boolean} [options] - Event listener options
+ * @returns {Function} Function that takes an element and returns a cleanup function
+ */
+export const on = (event, handler, options) => (element) => {
+  if (!element || typeof element.addEventListener !== 'function') {
+    return () => {};
+  }
+  element.addEventListener(event, handler, options);
+  return () => element.removeEventListener(event, handler, options);
+};
+
+/**
+ * Delegates an event: attaches a single listener on `parent` and invokes
+ * `handler` only when the event originates from a descendant matching `selector`.
+ *
+ * Because the listener lives on the parent, it automatically covers elements
+ * added *after* it is set up — ideal for enhancing DOM a CMS/framework injects
+ * later. The handler receives `(event, matchedElement)`, where `matchedElement`
+ * is the closest ancestor of the event target that matches `selector` (and is
+ * still contained by `parent`). Null-safe — a missing parent is a no-op that
+ * returns a callable cleanup.
+ *
+ * @param {Element} parent - Container element the listener is bound to
+ * @param {string} event - Event name (e.g. 'click')
+ * @param {string} selector - CSS selector a descendant must match
+ * @param {Function} handler - Called with (event, matchedElement)
+ * @returns {Function} Cleanup function that removes the listener
+ */
+export const delegate = (parent, event, selector, handler) => {
+  if (!parent || typeof parent.addEventListener !== 'function') {
+    return () => {};
+  }
+  const listener = (e) => {
+    const target = e.target;
+    if (!target || typeof target.closest !== 'function') return;
+    const match = target.closest(selector);
+    if (match && parent.contains(match)) {
+      handler(e, match);
+    }
+  };
+  parent.addEventListener(event, listener);
+  return () => parent.removeEventListener(event, listener);
+};
