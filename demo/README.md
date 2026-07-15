@@ -1,4 +1,27 @@
-# PolyX Integration Demo
+# PolyX Demos
+
+Framework-free, no-build demos. Serve the folder over HTTP (browsers block ES-module
+`import` from `file://`), or double-click a `*-standalone.html` file:
+
+```bash
+python3 -m http.server 8347
+# then open one of:
+#   http://localhost:8347/demo/index.html   — state + data + dom (Todo)
+#   http://localhost:8347/demo/query.html   — query client (Posts)
+```
+
+| Demo | Files | Shows |
+|------|-------|-------|
+| **Todo** — state + data + dom | `index.html` + `app.js`, or `standalone.html` | `createState` store, immutable `setPath`/lens updates, `on`/`delegate`/`onIntersect` |
+| **Query** — data fetching | `query.html` + `query.js`, or `query-standalone.html` | `createQueryClient`: loading/cached states, `refetch`, and an optimistic `mutation` with rollback |
+
+Each `*-standalone.html` inlines the PolyX subset it uses in a classic `<script>`,
+so it runs by **double-click** with no server. The module versions import the real
+library from `../src/**`.
+
+---
+
+## Todo demo (state + data + dom)
 
 A tiny, framework-free **Todo app** that wires the three modules together —
 **state**, **data**, and **dom** — with no build step.
@@ -45,3 +68,17 @@ and the DOM layer only ever calls those update functions and re-renders on
 `subscribe`. State, data, and DOM stay decoupled but compose cleanly.
 
 See `app.js` for the fully-commented source (~120 lines).
+
+---
+
+## Query demo (data fetching)
+
+A **Posts** app over a mock API (artificial latency, no backend) showing the query
+client end-to-end:
+
+| Piece | In this demo |
+|-------|--------------|
+| **query** | `client.query(['posts'])` renders a loading skeleton, then cached data. `refetch()` triggers a **background** fetch — the status dot goes amber while `status` stays `success`. |
+| **mutation** | `client.mutation` adds a post. `onMutate` inserts it **optimistically** (dashed/pending row); on failure it **rolls back** (tick "make the next save fail"); on success `onSettled` **invalidates** `['posts']` so the list reconciles with the server. |
+
+See `query.js` for the fully-commented source.

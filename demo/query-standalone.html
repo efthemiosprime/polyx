@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PolyX Query — standalone</title>
+  <style>
+    :root {
+      --bg: #0f1220; --panel: #181c2e; --panel-2: #1f2440; --line: #2c3358;
+      --text: #e7e9f5; --muted: #98a0c8; --accent: #7c9cff; --accent-2: #57e0a8;
+      --danger: #ff6b81; --warn: #ffb86c;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(1200px 600px at 70% -10%, #232a4d 0%, var(--bg) 60%);
+      color: var(--text); min-height: 100vh; padding: 32px 16px 120px; }
+    .wrap { max-width: 640px; margin: 0 auto; }
+    h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -0.02em; }
+    .sub { color: var(--muted); margin: 0 0 24px; }
+    .sub code { color: var(--accent); background: #ffffff0d; padding: 1px 6px; border-radius: 6px; }
+    .card { background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border: 1px solid var(--line); border-radius: 16px; padding: 18px; box-shadow: 0 20px 60px -30px #000; }
+    .row { display: flex; align-items: center; gap: 8px; }
+    .head { justify-content: space-between; margin-bottom: 14px; }
+    .status { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+    .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--muted); }
+    .dot.fetching { background: var(--warn); animation: pulse 1s infinite; }
+    .dot.success { background: var(--accent-2); }
+    .dot.error { background: var(--danger); }
+    @keyframes pulse { 50% { opacity: .3; } }
+    button { cursor: pointer; font: inherit; border: 1px solid var(--line);
+      background: #ffffff0d; color: var(--text); border-radius: 10px; padding: 8px 14px; }
+    button:hover { border-color: var(--accent); }
+    button:disabled { opacity: .5; cursor: default; }
+    .primary { background: var(--accent); color: #0b0e1f; border-color: transparent; font-weight: 600; }
+    ul { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    li.post { padding: 10px 12px; background: #0d1024; border: 1px solid var(--line); border-radius: 10px; }
+    li.post.pending { opacity: .55; border-style: dashed; }
+    .skeleton { height: 40px; border-radius: 10px; background: linear-gradient(90deg, #12162e, #1b2140, #12162e);
+      background-size: 200% 100%; animation: shimmer 1.2s infinite; }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+    form { display: flex; gap: 8px; margin-top: 16px; }
+    input[type=text] { flex: 1; background: #0d1024; border: 1px solid var(--line); color: var(--text);
+      padding: 10px 12px; border-radius: 10px; outline: none; }
+    input[type=text]:focus { border-color: var(--accent); }
+    label.fail { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; margin-top: 12px; }
+    .err { color: var(--danger); font-size: 13px; margin-top: 10px; }
+    .note { color: var(--muted); font-size: 12px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>PolyX Query</h1>
+    <p class="sub">A mock “Posts” API wired with <code>createQueryClient</code> — loading, caching, <code>refetch</code>, and an optimistic <code>mutation</code>.</p>
+    <div class="card">
+      <div class="row head">
+        <strong>Posts</strong>
+        <div class="row">
+          <span id="status" class="status"><span class="dot"></span><span id="status-text">idle</span></span>
+          <button id="refresh">Refresh</button>
+        </div>
+      </div>
+      <div id="list-host"></div>
+      <div id="error" class="err" hidden></div>
+      <form id="add-form">
+        <input id="new-post" type="text" placeholder="New post title…" autocomplete="off" />
+        <button class="primary" type="submit" id="add-btn">Add</button>
+      </form>
+      <label class="fail"><input type="checkbox" id="fail-next" /> make the next save fail (to see optimistic rollback)</label>
+    </div>
+    <p class="note">Standalone build — PolyX’s Task, createState, and the query client are inlined so this runs by double-click (no server). The module version is <code>query.html</code>.</p>
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+
+    // ── Inlined PolyX (verbatim subset from src/) ────────────────────────────
+
+    // src/async/task.js (subset)
+    const Task = (computation) => ({
+      fork: (onRejected, onResolved) => computation(onRejected, onResolved),
+      orElse: (handler) => Task((reject, resolve) =>
+        computation((error) => handler(error).fork(reject, resolve), resolve)),
+    });
+    Task.of = (value) => Task((_, resolve) => resolve(value));
+    Task.rejected = (error) => Task((reject) => reject(error));
+    Task.fromPromise = (promiseFn) => Task((reject, resolve) => {
+      try { Promise.resolve(promiseFn()).then(resolve, reject); } catch (e) { reject(e); }
+    });
+
+    // src/state/createState.js
+    function createState(initial) {
+      let value = initial;
+      const listeners = new Set();
+      let notifying = false;
+      const get = () => value;
+      const set = (next) => {
+        const resolved = typeof next === 'function' ? next(value) : next;
+        if (Object.is(resolved, value)) return value;
+        value = resolved;
+        if (notifying) return value;
+        notifying = true;
+        try {
+          let dispatched, passes = 0;
+          do {
+            if (++passes > 1000) throw new Error('createState: did not converge');
+            dispatched = value;
+            for (const l of [...listeners]) { if (listeners.has(l)) l(dispatched); }
+          } while (!Object.is(value, dispatched));
+        } finally { notifying = false; }
+        return value;
+      };
+      const subscribe = (l) => {
+        if (typeof l !== 'function') return () => {};
+        listeners.add(l);
+        return () => { listeners.delete(l); };
+      };
+      const store = [get, set];
+      store.get = get; store.set = set; store.subscribe = subscribe;
+      return store;
+    }
+
+    // src/dom/utils.js (on)
+    const on = (event, handler, options) => (el) => {
+      if (!el || typeof el.addEventListener !== 'function') return () => {};
+      el.addEventListener(event, handler, options);
+      return () => el.removeEventListener(event, handler, options);
+    };
+
+    // src/query/createQueryClient.js (subset: query, mutation, invalidate, setQueryData, getQueryData)
+    const serializeKey = (key) => JSON.stringify(key, (_k, v) =>
+      v && typeof v === 'object' && !Array.isArray(v)
+        ? Object.keys(v).sort().reduce((a, k) => { a[k] = v[k]; return a; }, {}) : v);
+    const keyMatches = (entryKey, filter) => {
+      if (typeof filter === 'function') return !!filter(entryKey);
+      if (Array.isArray(filter) && Array.isArray(entryKey))
+        return filter.every((seg, i) => serializeKey(seg) === serializeKey(entryKey[i]));
+      return serializeKey(filter) === serializeKey(entryKey);
+    };
+    const toTask = (x) => (x && typeof x.fork === 'function') ? x
+      : (x && typeof x.then === 'function') ? Task.fromPromise(() => x) : Task.of(x);
+    const withRetry = (factory, retries, delay) => {
+      const go = (n) => {
+        let out; try { out = factory(); } catch (e) { return Task.rejected(e); }
+        return toTask(out).orElse((err) => n <= 0 ? Task.rejected(err)
+          : Task((rej, res) => { setTimeout(() => go(n - 1).fork(rej, res), delay); }));
+      };
+      return go(retries);
+    };
+    const INITIAL = { status: 'idle', data: undefined, error: undefined, isFetching: false, isStale: true, updatedAt: 0 };
+
+    function createQueryClient(defaults = {}) {
+      const { staleTime: defStale = 0, retry: defRetry = 0, retryDelay: defDelay = 1000 } = defaults;
+      const cache = new Map();
+      const ensureEntry = (key) => {
+        const hash = serializeKey(key);
+        let e = cache.get(hash);
+        if (!e) {
+          e = { key, hash, store: createState({ ...INITIAL }), fetcher: null,
+            staleTime: defStale, retry: defRetry, retryDelay: defDelay, enabled: true,
+            fetchId: 0, fetching: false, subscribers: 0 };
+          cache.set(hash, e);
+        }
+        return e;
+      };
+      const applyOptions = (e, o) => {
+        if (o.fetcher) e.fetcher = o.fetcher;
+        if (o.staleTime !== undefined) e.staleTime = o.staleTime;
+        if (o.enabled !== undefined) e.enabled = o.enabled;
+      };
+      const commit = (e, id, patch) => {
+        if (id !== e.fetchId) return;
+        e.fetching = false;
+        e.store.set((s) => ({ ...s, ...patch }));
+      };
+      const runFetch = (e, { force = false } = {}) => {
+        if (!e.fetcher) return;
+        if (!force && !e.enabled) return;
+        const s = e.store.get();
+        if (!force) {
+          if (e.fetching) return;
+          const fresh = s.status === 'success' && !s.isStale &&
+            (e.staleTime === Infinity || Date.now() - s.updatedAt < e.staleTime);
+          if (fresh) return;
+        }
+        const id = ++e.fetchId;
+        e.fetching = true;
+        e.store.set((st) => ({ ...st, isFetching: true, status: st.data === undefined ? 'loading' : st.status }));
+        withRetry(() => e.fetcher(), e.retry, e.retryDelay).fork(
+          (error) => commit(e, id, { status: 'error', error, isFetching: false, isStale: false }),
+          (data) => commit(e, id, { status: 'success', data, error: undefined, isFetching: false, isStale: false, updatedAt: Date.now() }));
+      };
+      const makeHandle = (e) => ({
+        key: e.key, getState: () => e.store.get(),
+        subscribe: (fn) => { e.subscribers += 1; const off = e.store.subscribe(fn); return () => { e.subscribers -= 1; off(); }; },
+        refetch: () => runFetch(e, { force: true }),
+        select: (sel) => sel(e.store.get()),
+      });
+      const query = (o) => { const e = ensureEntry(o.key); applyOptions(e, o); if (e.enabled) runFetch(e); return makeHandle(e); };
+      const invalidate = (filter) => {
+        for (const e of cache.values()) {
+          if (!keyMatches(e.key, filter)) continue;
+          e.store.set((s) => ({ ...s, isStale: true }));
+          if (e.enabled) runFetch(e, { force: true });
+        }
+      };
+      const setQueryData = (key, d) => {
+        const e = ensureEntry(key);
+        e.store.set((s) => ({ ...s, status: 'success', data: typeof d === 'function' ? d(s.data) : d, error: undefined, isStale: false, updatedAt: Date.now() }));
+        return e.store.get().data;
+      };
+      const getQueryData = (key) => { const e = cache.get(serializeKey(key)); return e ? e.store.get().data : undefined; };
+      const mutation = (config) => {
+        const { mutationFn, onMutate, onSuccess, onError, onSettled, retry = defRetry, retryDelay = defDelay } = config;
+        const store = createState({ status: 'idle', data: undefined, error: undefined, isLoading: false, variables: undefined });
+        let callId = 0;
+        const mutate = async (variables) => {
+          const id = ++callId;
+          store.set((s) => ({ ...s, status: 'loading', isLoading: true, variables, error: undefined }));
+          let context;
+          try {
+            context = onMutate ? await onMutate(variables) : undefined;
+            const data = await new Promise((res, rej) => withRetry(() => mutationFn(variables), retry, retryDelay).fork(rej, res));
+            if (onSuccess) await onSuccess(data, variables, context);
+            if (id === callId) store.set((s) => ({ ...s, status: 'success', data, isLoading: false }));
+            if (onSettled) await onSettled(data, undefined, variables, context);
+            return data;
+          } catch (error) {
+            if (onError) await onError(error, variables, context);
+            if (id === callId) store.set((s) => ({ ...s, status: 'error', error, isLoading: false }));
+            if (onSettled) await onSettled(undefined, error, variables, context);
+            return undefined;
+          }
+        };
+        return { mutate, getState: () => store.get(), subscribe: (fn) => store.subscribe(fn),
+          reset: () => store.set(() => ({ status: 'idle', data: undefined, error: undefined, isLoading: false, variables: undefined })) };
+      };
+      return { query, mutation, invalidate, setQueryData, getQueryData };
+    }
+
+    // ── Mock API + app (identical to demo/query.js) ──────────────────────────
+    let db = [{ id: 1, title: 'Learn createQueryClient' }, { id: 2, title: 'Cache + dedupe for free' }];
+    let failNext = false;
+    const fetchPosts = () => new Promise((resolve) => setTimeout(() => resolve([...db]), 600));
+    const createPost = (title) => new Promise((resolve, reject) => setTimeout(() => {
+      if (failNext) { failNext = false; reject(new Error('Server rejected the post')); return; }
+      const post = { id: Date.now(), title }; db = [...db, post]; resolve(post);
+    }, 700));
+
+    const client = createQueryClient({ staleTime: 5000 });
+    const posts = client.query({ key: ['posts'], fetcher: fetchPosts });
+
+    const $ = (s) => document.querySelector(s);
+    const statusDot = $('#status .dot'), statusText = $('#status-text');
+    const listHost = $('#list-host'), errorEl = $('#error');
+    const refreshBtn = $('#refresh'), addBtn = $('#add-btn');
+    let pendingIds = new Set();
+
+    const render = (s) => {
+      statusDot.className = 'dot ' + (s.isFetching ? 'fetching' : s.status);
+      statusText.textContent = s.isFetching ? (s.status === 'success' ? 'refetching…' : 'loading…') : s.status;
+      refreshBtn.disabled = s.isFetching;
+      errorEl.hidden = s.status !== 'error';
+      if (s.status === 'error') errorEl.textContent = 'Error: ' + (s.error && s.error.message);
+      if (s.status === 'loading' && !s.data) { listHost.innerHTML = '<ul><li class="skeleton"></li><li class="skeleton"></li></ul>'; return; }
+      const ul = document.createElement('ul');
+      for (const p of (s.data || [])) {
+        const li = document.createElement('li');
+        li.className = 'post' + (pendingIds.has(p.id) ? ' pending' : '');
+        li.textContent = p.title; ul.appendChild(li);
+      }
+      listHost.innerHTML = ''; listHost.appendChild(ul);
+    };
+
+    posts.subscribe(render);
+    render(posts.getState());
+    on('click', () => posts.refetch())(refreshBtn);
+
+    const addPost = client.mutation({
+      mutationFn: (title) => createPost(title),
+      onMutate: (title) => {
+        const prev = client.getQueryData(['posts']);
+        const tempId = -Date.now(); pendingIds.add(tempId);
+        client.setQueryData(['posts'], (list) => [...list, { id: tempId, title }]);
+        return { prev, tempId };
+      },
+      onError: (_e, _t, ctx) => { pendingIds.delete(ctx.tempId); client.setQueryData(['posts'], ctx.prev); },
+      onSettled: (_d, _e, _t, ctx) => { if (ctx) pendingIds.delete(ctx.tempId); client.invalidate(['posts']); },
+    });
+    addPost.subscribe((s) => { addBtn.disabled = s.isLoading; });
+
+    on('submit', (e) => {
+      e.preventDefault();
+      const input = $('#new-post'); const title = input.value.trim();
+      if (!title) return; addPost.mutate(title); input.value = '';
+    })($('#add-form'));
+    on('change', (e) => { failNext = e.target.checked; })($('#fail-next'));
+  })();
+  </script>
+</body>
+</html>
