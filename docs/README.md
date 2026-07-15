@@ -24,6 +24,8 @@ These pages exist today:
 - [Immutable Nested Updates](./core/data-paths.md)
 - [Lenses](./core/lenses.md)
 - [Structural Transforms](./core/data-transform.md)
+- [DOM Events & Observers](./core/dom-events.md)
+- [Pure DOM (domIO & create)](./core/dom-io.md)
 
 ---
 
