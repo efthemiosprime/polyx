@@ -13,6 +13,7 @@ These pages exist today:
 - [Core Overview](./core/README.md)
 - [Maybe Monad](./core/maybe.md)
 - [Either Monad](./core/either.md)
+- [Validation](./core/validation.md)
 - [Task](./core/task.md)
 - [Compose & Combinators](./core/compose.md)
 - [when](./core/when.md)
