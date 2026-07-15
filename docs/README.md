@@ -20,6 +20,9 @@ These pages exist today:
 - [isInView](./core/is-inview.md)
 - [scrollManager](./core/scroll-manager.md)
 - [State (createState)](./core/state.md)
+- [Immutable Nested Updates](./core/data-paths.md)
+- [Lenses](./core/lenses.md)
+- [Structural Transforms](./core/data-transform.md)
 
 ---
 

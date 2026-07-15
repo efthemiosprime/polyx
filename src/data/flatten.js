@@ -38,44 +38,45 @@ export const flatten = (obj, options = {}) => {
       return current;
     };
     
-    // Recursively flatten the object
-    const flattenRecursive = (obj, prefix = '') => {
-      // Unwrap the object if it matches unwrapPaths pattern
-      const unwrapped = unwrap(obj);
-      
-      // If unwrapping changed the object, start again with the unwrapped object
-      if (unwrapped !== obj) {
-        return flattenRecursive(unwrapped, prefix);
+    // Unwrap the top level first; a non-object (or empty) result is returned
+    // as-is, matching the original base-case behavior.
+    const top = unwrap(obj);
+    if (!isObject(top) || Object.keys(top).length === 0) {
+      return top;
+    }
+
+    // Single mutable accumulator: each leaf is written exactly once, so the whole
+    // flatten is O(n) instead of the previous O(n^2) spread-in-reduce.
+    const result = {};
+
+    const walk = (node, prefix) => {
+      // Unwrap at each level so nested wrapper envelopes collapse too.
+      const unwrapped = unwrap(node);
+      if (unwrapped !== node) {
+        walk(unwrapped, prefix);
+        return;
       }
-      
-      // Base case: not an object or empty object
-      if (!isObject(obj) || Object.keys(obj).length === 0) {
-        return prefix ? { [prefix]: obj } : obj;
+
+      if (!isObject(node) || Object.keys(node).length === 0) {
+        if (prefix) result[prefix] = node;
+        return;
       }
-      
-      // Recursive case: process each property
-      return Object.entries(obj).reduce((acc, [key, value]) => {
+
+      for (const [key, value] of Object.entries(node)) {
         const newKey = prefix ? `${prefix}${config.delimiter}${key}` : key;
-        
         if (isObject(value)) {
-          // For nested objects, recursively flatten
-          const flattened = flattenRecursive(value, newKey);
-          
-          // If we're removing nested objects, merge the flattened values
-          if (config.removeNested) {
-            return { ...acc, ...flattened };
-          } else {
-            // Otherwise, keep the original nested object and add flattened values
-            return { ...acc, [newKey]: value, ...flattened };
-          }
+          // Keep the original nested object alongside its flattened leaves when
+          // removeNested is false.
+          if (!config.removeNested) result[newKey] = value;
+          walk(value, newKey);
         } else {
-          // For non-objects, just add the key-value pair
-          return { ...acc, [newKey]: value };
+          result[newKey] = value;
         }
-      }, {});
+      }
     };
-    
-    return flattenRecursive(obj);
+
+    walk(top, '');
+    return result;
   };
 
 
