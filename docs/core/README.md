@@ -10,6 +10,7 @@ This document provides detailed information about the core modules and functions
   - [ArrayTransform](#arraytransform)
   - [Compose](#compose)
   - [When](#when)
+  - [State](#state)
 - [DOM Utilities](#dom-utilities)
   - [scrollManager](#scrollManager)
   - [isInView](#isinview)
@@ -185,6 +186,22 @@ const doubleIfEven = when(isEven, double);
 doubleIfEven(4); // Returns 8
 doubleIfEven(5); // Returns 5 (unchanged)
 ```
+
+### [State](./state.md)
+
+A framework-free `[state, setState]` container (React-like, but `state` is a getter
+since vanilla JS has no re-render). See the [full State guide](./state.md).
+
+```javascript
+import { createState } from '@efthemiosprime/polyx';
+```
+
+| Method | Description | Signature | Example |
+|--------|-------------|-----------|---------|
+| `createState(initial)` | Create a store; returns `[state, setState]` that also carries `get`/`set`/`subscribe`. | `T -> StateStore<T>` | `const [n, setN] = createState(0)` |
+| `state()` / `store.get()` | Read the current value. | `() -> T` | `n()` |
+| `setState(next)` | Set a value or apply an updater `(prev) => next`. | `(T \| (T->T)) -> T` | `setN(x => x + 1)` |
+| `store.subscribe(fn)` | React to changes; returns an unsubscribe. | `((T) -> void) -> (() -> void)` | `store.subscribe(render)` |
 
 ## DOM Utilities
 

@@ -7,6 +7,7 @@ export { flatten, flattenWith } from './data/flatten.js';
 export { path, getPath, makePath } from './data/path.js';
 export { IO } from './async/io.js';
 export { Task } from './async/task.js';
+export { createState } from './state/createState.js';
 export { 
   getElement, 
   getElements, 
@@ -35,4 +36,5 @@ export * as data from './data/index.js';
 export * as core from './core/index.js';
 export * as dom from './dom/index.js';
 export * as async from './async/index.js';
+export * as state from './state/index.js';
 // export * as advanced from './advanced/index.js';

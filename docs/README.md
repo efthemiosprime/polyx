@@ -19,6 +19,7 @@ These pages exist today:
 - [ArrayTransform](./core/array-transform.md)
 - [isInView](./core/is-inview.md)
 - [scrollManager](./core/scroll-manager.md)
+- [State (createState)](./core/state.md)
 
 ---
 

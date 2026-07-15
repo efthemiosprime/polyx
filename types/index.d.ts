@@ -179,6 +179,20 @@ export const Task: {
 };
 
 // ---------------------------------------------------------------------------
+// state / createState
+// ---------------------------------------------------------------------------
+
+export type StateUpdater<T> = T | ((prev: T) => T);
+
+export type StateStore<T> = [() => T, (next: StateUpdater<T>) => T] & {
+  get(): T;
+  set(next: StateUpdater<T>): T;
+  subscribe(listener: (value: T) => void): () => void;
+};
+
+export function createState<T>(initial: T): StateStore<T>;
+
+// ---------------------------------------------------------------------------
 // data / flatten & path
 // ---------------------------------------------------------------------------
 

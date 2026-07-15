@@ -147,7 +147,7 @@ Practical examples showing how these concepts apply to real-world problems:
 - DOM manipulation using the IO monad *(available)*
 - API clients using Task *(available)*
 - Form validation using Validation/Either *(roadmap — Validation not yet implemented)*
-- State management using the State monad *(roadmap — State not yet implemented)*
+- State management with `createState` — a React-like `[state, setState]` container *(available)*
 
 ## Educational Resources
 
