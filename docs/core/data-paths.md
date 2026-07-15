@@ -68,6 +68,65 @@ getPathMaybe('a.b')({ a: { b: 7 } }).getOrElse(0);   // 7
 getPathMaybe('a.x')({ a: { b: 7 } }).getOrElse(0);   // 0 (Nothing)
 ```
 
+### `getPathOr(default, path) → (obj) => value`
+
+Literal read that returns `default` **only** when the path is truly absent
+(resolves to `undefined`). Unlike `getPathMaybe`, a stored `null` is preserved —
+so this is the correct reader for round-tripping values, and the getter that backs
+[`lensPath`](./lenses.md).
+
+```javascript
+getPathOr(0, 'a.b')({ a: { b: 7 } });      // 7
+getPathOr(0, 'a.x')({ a: { b: 7 } });      // 0   (absent → default)
+getPathOr(0, 'a.b')({ a: { b: null } });   // null (present null preserved)
+```
+
+## Reading with `getPath` / `path` / `makePath`
+
+Alongside the literal readers above, the module ships **envelope-tolerant** readers
+that auto-unwrap common REST wrappers (`data` / `attributes`), which is handy for
+Strapi/JSON:API responses. These are reads only — the immutable writers above stay
+literal on purpose.
+
+### `getPath(path) → (obj) => value`
+
+Curried deep read. Auto-traverses `data`/`attributes` envelopes, so a short path
+resolves through the wrapping transparently.
+
+```javascript
+import { getPath } from '@efthemiosprime/polyx';
+
+const res = { data: { blog: { data: { attributes: { title: 'Hi' } } } } };
+getPath('blog.title')(res);                 // 'Hi'  (envelopes skipped)
+getPath('blog.data.attributes.title')(res); // 'Hi'  (explicit also works)
+getPath('missing')(res);                    // undefined
+```
+
+### `path(obj)` — accessor object
+
+Wraps an object with chainable accessors: `get(path, default?)`, `has(path)`,
+`getAll(path)` (map a path over an array of items), and `prop(path)` (a reusable
+extractor).
+
+```javascript
+import { path } from '@efthemiosprime/polyx';
+
+const p = path({ user: { name: 'Ada' } });
+p.get('user.name');            // 'Ada'
+p.get('user.age', 0);          // 0 (default)
+p.has('user.name');            // true
+p.prop('user.name');           // reusable extractor: (obj) => obj's user.name
+```
+
+### `makePath(...parts) → string`
+
+Builds a dot-path from parts, skipping falsy segments — useful for dynamic paths.
+
+```javascript
+import { makePath } from '@efthemiosprime/polyx';
+makePath('user', condition && 'profile', 'name'); // 'user.name' when falsy dropped
+```
+
 ## Real-World Examples
 
 ### Point-free updates in a pipeline
@@ -112,6 +171,8 @@ const bumpVersion = (obj) =>
 
 | Need | Use |
 |------|-----|
-| Read, tolerant of REST `data`/`attributes` envelopes | [`getPath`](../data-roadmap.md) / `path().get` |
+| Read, tolerant of REST `data`/`attributes` envelopes | `getPath` / `path().get` |
 | Read literally as a `Maybe` | `getPathMaybe` |
+| Read literally with a default (null-preserving) | `getPathOr` |
 | Set / update / remove immutably | `setPath` / `updatePath` / `dissocPath` |
+| A reusable, composable focus | [lenses](./lenses.md) |

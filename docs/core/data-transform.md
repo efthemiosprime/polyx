@@ -13,6 +13,35 @@ import { unflatten, pick, omit, mergeDeep, mergeDeepWith } from '@efthemiosprime
 
 ## API Reference
 
+### `flatten(obj, options?)`
+
+Collapse a nested object into a flat map of delimited keys. Arrays are kept whole
+as leaf values. Options: `delimiter` (default `'.'`), `removeNested` (default
+`true` — set `false` to keep the original nested objects alongside their flattened
+leaves), and `unwrapPaths` (default `['data', 'attributes']` — REST envelopes to
+skip). Runs in O(n).
+
+```javascript
+import { flatten } from '@efthemiosprime/polyx';
+
+flatten({ a: { b: { c: 1 } } });                 // { 'a.b.c': 1 }
+flatten({ a: { b: 1 } }, { delimiter: '/' });    // { 'a/b': 1 }
+flatten({ a: { list: [1, 2] } });                // { 'a.list': [1, 2] } (array = leaf)
+flatten({ data: { attributes: { title: 'Hi' } } }); // { title: 'Hi' } (envelope unwrapped)
+```
+
+### `flattenWith(paths) → (obj) => value`
+
+Navigate a fixed sequence of wrapper keys, stopping if a segment is missing —
+a focused unwrap for a known envelope shape.
+
+```javascript
+import { flattenWith } from '@efthemiosprime/polyx';
+
+flattenWith(['data', 'attributes'])({ data: { attributes: { title: 'Hi' } } });
+// { title: 'Hi' }
+```
+
 ### `unflatten(map, delimiter = '.')`
 
 The inverse of [`flatten`](../data-roadmap.md): rebuild a nested structure from a
