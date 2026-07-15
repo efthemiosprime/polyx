@@ -311,6 +311,17 @@ export function onIntersect(
   callback: IntersectionObserverCallback,
   options?: IntersectionObserverInit
 ): () => void;
+export function onResize(
+  target: string | Element | NodeListOf<Element> | Element[] | null | undefined,
+  callback: ResizeObserverCallback,
+  options?: ResizeObserverOptions
+): () => void;
+export function onMutation(
+  target: string | Element | NodeListOf<Element> | Element[] | null | undefined,
+  callback: MutationCallback,
+  options?: MutationObserverInit
+): () => void;
+export function ready(): Task<never, Document>;
 export function setStyle(
   property: string,
   value: string

@@ -1,6 +1,7 @@
 export { isInView, createInViewChecker } from './isInView.js';
 export { scrollManager } from './scrollManager.js';
-export { onIntersect } from './observers.js';
+export { onIntersect, onResize, onMutation } from './observers.js';
+export { ready } from './ready.js';
 export {
     getElement,
     getElements,
