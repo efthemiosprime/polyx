@@ -162,6 +162,61 @@ ArrayTransform.from(cart).some(item => item.outOfStock); // any out of stock?
 ArrayTransform.from(fields).every(f => f.valid);         // all valid?
 ```
 
+#### `last()` / `isEmpty()`
+
+`last()` returns the final element as a [`Maybe`](./maybe.md); `isEmpty()` reports whether
+there are no elements.
+
+```javascript
+ArrayTransform.from(log).last().getOrElse(null);
+ArrayTransform.from(results).isEmpty(); // true when empty
+```
+
+#### `take(n)` / `drop(n)`
+
+Chainable slices: the first `n`, or everything after the first `n`.
+
+```javascript
+ArrayTransform.from(items).drop(1).take(10).toArray(); // items 2..11
+```
+
+#### `unique(keyFn?)`
+
+Removes duplicates (by identity, or by a derived key), preserving first-seen order.
+Chainable.
+
+```javascript
+ArrayTransform.from([1, 1, 2, 3, 2]).unique().toArray();      // [1, 2, 3]
+ArrayTransform.from(rows).unique(r => r.id).toArray();        // one row per id
+```
+
+#### `groupBy(fn)`
+
+Groups items into a plain object keyed by `fn(item)` (keys are stringified). Terminal.
+
+```javascript
+ArrayTransform.from(orders).groupBy(o => o.status);
+// { pending: [...], shipped: [...], cancelled: [...] }
+```
+
+#### `partition(pred)`
+
+Splits into a `[pass, fail]` tuple. Terminal.
+
+```javascript
+const [valid, invalid] = ArrayTransform.from(entries).partition(e => e.ok);
+```
+
+#### `ArrayTransform.of(value)` / `chain(fn)`
+
+`of` lifts a single value into an ArrayTransform (applicative `pure`); `chain` is an alias
+for `flatMap`, for consistency with the other monads.
+
+```javascript
+ArrayTransform.of(5).toArray();                 // [5]
+ArrayTransform.from([1, 2]).chain(x => [x, x]); // same as flatMap
+```
+
 ## Real-World Examples
 
 ### Example 1: Processing User Data

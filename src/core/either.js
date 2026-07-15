@@ -1,3 +1,7 @@
+// NOTE: Either <-> Maybe interop makes this a circular import with maybe.js.
+// Safe because `Maybe` is only referenced inside method bodies (call-time).
+import { Maybe } from './maybe.js';
+
 export const Either = {
     Left: x => ({
       isLeft: true,
@@ -16,7 +20,11 @@ export const Either = {
       // Recover from a Left by returning a new Either.
       orElse: f => f(x),
       fold: (f, _) => f(x),
-      getOrElse: defaultValue => defaultValue
+      getOrElse: defaultValue => defaultValue,
+      // Lazy getOrElse: a Left always runs the thunk.
+      getOrElseGet: fn => fn(),
+      // Drop the error side: a Left becomes Nothing.
+      toMaybe: () => Maybe.of(null)
     }),
 
     Right: x => ({
@@ -33,7 +41,11 @@ export const Either = {
       ap: other => other.map(x),
       orElse: _ => Either.Right(x),
       fold: (_, g) => g(x),
-      getOrElse: _ => x
+      getOrElse: _ => x,
+      // Lazy getOrElse: a Right returns its value, thunk untouched.
+      getOrElseGet: _ => x,
+      // Drop the error side: a Right becomes Just(value).
+      toMaybe: () => Maybe.of(x)
     }),
 
     // Applicative pure: lift a value into the success side.

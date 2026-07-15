@@ -49,6 +49,8 @@ import { Maybe } from '@efthemiosprime/polyx';
 | `ap(other)` | Applicative apply — the value must be a function. | `Maybe<a> -> Maybe<b>` | `Maybe.of(f).ap(Maybe.of(9))` |
 | `tap(fn)` | Runs a side effect with the value, returns the Maybe. | `(a -> void) -> Maybe<a>` | `maybeUser.tap(u => console.log(u))` |
 | `getOrElse(defaultValue)` | Returns the value or a default. | `b -> a \| b` | `maybeUser.getOrElse('Guest')` |
+| `getOrElseGet(fn)` | Lazy `getOrElse` — the thunk runs only for Nothing. | `(() -> b) -> a \| b` | `m.getOrElseGet(() => expensive())` |
+| `toEither(leftValue)` | Nothing → `Left(leftValue)`, Just → `Right`. | `l -> Either<l, a>` | `m.toEither('not found')` |
 
 ### [Either](./either.md)
 
@@ -90,6 +92,8 @@ import { Either } from '@efthemiosprime/polyx';
 | `orElse(fn)` | Recover from a Left with a new Either. | `(a -> Either<c, d>) -> Either<c, b\|d>` | `result.orElse(() => Either.Right(0))` |
 | `fold(leftFn, rightFn)` | Applies one of two functions. | `((a -> c), (b -> c)) -> c` | `result.fold(onErr, onOk)` |
 | `getOrElse(defaultValue)` | Returns Right value or default. | `c -> b \| c` | `result.getOrElse(0)` |
+| `getOrElseGet(fn)` | Lazy `getOrElse` — the thunk runs only for a Left. | `(() -> c) -> b \| c` | `result.getOrElseGet(() => load())` |
+| `toMaybe()` | Left → Nothing, Right → Just. | `() -> Maybe<b>` | `result.toMaybe()` |
 
 ### [ArrayTransform](./array-transform.md)
 
@@ -104,6 +108,7 @@ import { ArrayTransform } from '@efthemiosprime/polyx';
 | Method | Description | Signature | Example |
 |--------|-------------|-----------|---------|
 | `ArrayTransform.from(array)` | Creates an ArrayTransform from an array or array-like object. | `Array<a> -> ArrayTransform<a>` | `ArrayTransform.from([1, 2, 3])` |
+| `ArrayTransform.of(value)` | Lifts a single value into an ArrayTransform. | `a -> ArrayTransform<a>` | `ArrayTransform.of(5)` |
 
 #### Instance Methods
 
@@ -111,12 +116,17 @@ import { ArrayTransform } from '@efthemiosprime/polyx';
 |--------|-------------|-----------|---------|
 | `map(fn)` | Maps each value in the array. | `(a -> b) -> ArrayTransform<b>` | `at.map(x => x * 2)` |
 | `filter(fn)` | Filters the array. | `(a -> boolean) -> ArrayTransform<a>` | `at.filter(x => x > 5)` |
-| `flatMap(fn)` | Maps then flattens one level. | `(a -> b\|b[]) -> ArrayTransform<b>` | `at.flatMap(x => [x, x])` |
+| `flatMap(fn)` / `chain(fn)` | Maps then flattens one level. | `(a -> b\|b[]) -> ArrayTransform<b>` | `at.flatMap(x => [x, x])` |
 | `forEach(fn)` | Executes a function for each element. | `(a -> void) -> ArrayTransform<a>` | `at.forEach(console.log)` |
+| `take(n)` / `drop(n)` | First `n` / all but the first `n` (chainable). | `number -> ArrayTransform<a>` | `at.take(10)` |
+| `unique(keyFn?)` | Dedupe by identity or a derived key, keeping order. | `((a -> k)?) -> ArrayTransform<a>` | `at.unique(x => x.id)` |
 | `reduce(fn, init?)` | Folds the array to a single value. | `((acc, a) -> acc, acc?) -> acc` | `at.reduce((s, x) => s + x, 0)` |
+| `groupBy(fn)` | Group into an object keyed by `fn(item)`. | `(a -> key) -> { [key]: a[] }` | `at.groupBy(x => x.type)` |
+| `partition(pred)` | Split into `[pass, fail]`. | `(a -> boolean) -> [a[], a[]]` | `at.partition(x => x.ok)` |
 | `find(fn)` | First match as a **`Maybe`** (Nothing if none). | `(a -> boolean) -> Maybe<a>` | `at.find(x => x > 5)` |
-| `head()` | First element as a **`Maybe`**. | `() -> Maybe<a>` | `at.head()` |
+| `head()` / `last()` | First / last element as a **`Maybe`**. | `() -> Maybe<a>` | `at.last()` |
 | `some(fn)` / `every(fn)` | Whether any / all elements pass. | `(a -> boolean) -> boolean` | `at.some(x => x > 5)` |
+| `isEmpty()` | Whether the collection has no elements. | `() -> boolean` | `at.isEmpty()` |
 | `toSet()` | Converts the array to a Set. | `() -> Set<a>` | `at.toSet()` |
 | `toArray()` | Returns a copy of the underlying array. | `() -> Array<a>` | `at.toArray()` |
 

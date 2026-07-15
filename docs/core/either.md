@@ -76,6 +76,8 @@ propagates unchanged.
 | `orElse(fn)` | Recover from a `Left` by returning a new `Either`; a `Right` is unchanged. | `(a -> Either<c, d>) -> Either<c, b\|d>` |
 | `fold(onLeft, onRight)` | Collapse to a single value by handling both branches. | `((a -> c), (b -> c)) -> c` |
 | `getOrElse(default)` | The `Right` value, or `default` for a `Left`. | `c -> b \| c` |
+| `getOrElseGet(fn)` | Lazy `getOrElse` — the thunk runs only for a `Left`. | `(() -> c) -> b \| c` |
+| `toMaybe()` | Drop the error side: `Left` → Nothing, `Right` → Just. | `() -> Maybe<b>` |
 
 ## Real-World Examples
 

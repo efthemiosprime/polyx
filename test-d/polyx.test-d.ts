@@ -40,9 +40,22 @@ const recovered = Either.Left<string>('e').orElse((s) => Either.Right(s.length))
 
 // --- ArrayTransform ---
 const at = ArrayTransform.from([1, 2, 3]);
+const single = ArrayTransform.of(5);
 const sum: number = at.reduce((acc, x) => acc + x, 0);
 const first: Maybe<number> = at.find((x) => x > 1);
 const flat = at.flatMap((x) => [x, x * 10]).toArray();
+const atChained = at.chain((x) => [x, x]).toArray();
+const grouped: Record<string, number[]> = at.groupBy((x) => (x % 2 === 0 ? 'e' : 'o'));
+const [pass, fail]: [number[], number[]] = at.partition((x) => x > 1);
+const uniq = at.unique().take(2).drop(1).toArray();
+const last: Maybe<number> = at.last();
+const empty: boolean = at.isEmpty();
+
+// --- interop / lazy defaults ---
+const toE: Either<string, number> = Maybe.of(1).toEither('missing');
+const toM: Maybe<number> = Either.Right(1).toMaybe();
+const lazyM: number = Maybe.of(1).getOrElseGet(() => 0);
+const lazyE: number = Either.Right(1).getOrElseGet(() => 0);
 
 // --- compose helpers ---
 const inc = (x: number) => x + 1;
@@ -68,5 +81,6 @@ const el = getElement('.x');
 
 // touch everything so the fixture stays valid regardless of noUnusedLocals
 void [folded, or, apM, chained, wrapped, bi, apE, recovered, sum, first, flat,
+  single, atChained, grouped, pass, fail, uniq, last, empty, toE, toM, lazyM, lazyE,
   f, g, id, seven, isOdd, cond, io, task, flat2, title, getter, inView, pos, el,
   CoreMaybe, DataFlatten, DomScroll, AsyncIO];

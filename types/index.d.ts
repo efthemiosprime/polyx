@@ -19,6 +19,10 @@ export interface Maybe<T> {
   /** Applicative apply — valid when T is a unary function `(a: A) => B`. */
   ap<A, B>(other: Maybe<A>): Maybe<B>;
   getOrElse<U>(defaultValue: U): T | U;
+  /** Lazy getOrElse — the thunk runs only for a Nothing. */
+  getOrElseGet<U>(fn: () => U): T | U;
+  /** Nothing -> Left(leftValue); Just -> Right(value). */
+  toEither<L>(leftValue: L): Either<L, T>;
 }
 
 export const Maybe: {
@@ -44,6 +48,10 @@ export interface Either<L, R> {
   orElse<L2, R2>(fn: (l: L) => Either<L2, R2>): Either<L2, R | R2>;
   fold<A, B>(onLeft: (l: L) => A, onRight: (r: R) => B): A | B;
   getOrElse<U>(defaultValue: U): R | U;
+  /** Lazy getOrElse — the thunk runs only for a Left. */
+  getOrElseGet<U>(fn: () => U): R | U;
+  /** Left -> Nothing; Right -> Just(value). */
+  toMaybe(): Maybe<R>;
 }
 
 export const Either: {
@@ -68,19 +76,28 @@ export interface ArrayTransform<T> {
   map<U>(fn: (item: T, index: number) => U): ArrayTransform<U>;
   filter(fn: (item: T, index: number) => boolean): ArrayTransform<T>;
   flatMap<U>(fn: (item: T, index: number) => U | readonly U[]): ArrayTransform<U>;
+  chain<U>(fn: (item: T, index: number) => U | readonly U[]): ArrayTransform<U>;
   forEach(fn: (item: T, index: number) => void): ArrayTransform<T>;
+  take(n: number): ArrayTransform<T>;
+  drop(n: number): ArrayTransform<T>;
+  unique(keyFn?: (item: T) => unknown): ArrayTransform<T>;
   reduce(fn: (acc: T, item: T, index: number) => T): T;
   reduce<U>(fn: (acc: U, item: T, index: number) => U, initial: U): U;
+  groupBy(fn: (item: T) => PropertyKey): Record<string, T[]>;
+  partition(pred: (item: T) => boolean): [T[], T[]];
   find(fn: (item: T, index: number) => boolean): Maybe<T>;
   head(): Maybe<T>;
+  last(): Maybe<T>;
   some(fn: (item: T, index: number) => boolean): boolean;
   every(fn: (item: T, index: number) => boolean): boolean;
+  isEmpty(): boolean;
   toSet(): Set<T>;
   toArray(): T[];
 }
 
 export const ArrayTransform: {
   from<T>(source: Iterable<T> | ArrayLike<T>): ArrayTransform<T>;
+  of<T>(value: T): ArrayTransform<T>;
 };
 
 // ---------------------------------------------------------------------------
