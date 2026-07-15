@@ -120,8 +120,11 @@ export const setText = (text) => (element) =>
     });
 
 /**
- * Adds an event listener to an element safely
- * 
+ * Adds an event listener to an element safely.
+ *
+ * @deprecated Returns the element, so the listener can never be removed (it
+ * leaks). Prefer {@link on}, which returns a cleanup function.
+ *
  * @param {string} event - Event name
  * @param {Function} handler - Event handler function
  * @param {Object|boolean} [options] - Event listener options
