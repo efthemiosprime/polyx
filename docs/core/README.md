@@ -12,6 +12,11 @@ This document provides detailed information about the core modules and functions
   - [Compose](#compose)
   - [When](#when)
   - [State](#state)
+- [Data Utilities](#data-utilities)
+  - [Paths (read)](#paths-read)
+  - [Paths (immutable write)](#paths-immutable-write)
+  - [Lenses](#lenses)
+  - [Structural transforms](#structural-transforms)
 - [DOM Utilities](#dom-utilities)
   - [scrollManager](#scrollManager)
   - [isInView](#isinview)
@@ -222,6 +227,68 @@ import { createState } from '@efthemiosprime/polyx';
 | `state()` / `store.get()` | Read the current value. | `() -> T` | `n()` |
 | `setState(next)` | Set a value or apply an updater `(prev) => next`. | `(T \| (T->T)) -> T` | `setN(x => x + 1)` |
 | `store.subscribe(fn)` | React to changes; returns an unsubscribe. | `((T) -> void) -> (() -> void)` | `store.subscribe(render)` |
+
+## Data Utilities
+
+Read, transform, and rebuild deeply nested data immutably. Paths are dot-strings
+(`'a.b.0'`) or key arrays (`['a', 'b', 0]`); everything is curried data-last.
+
+```javascript
+import {
+  getPath, getPathMaybe, getPathOr, path, makePath,
+  setPath, updatePath, dissocPath,
+  lensProp, lensPath, lensIndex, lens, view, set, over, composeLens,
+  flatten, unflatten, pick, omit, mergeDeep, mergeDeepWith,
+} from '@efthemiosprime/polyx';
+```
+
+### Paths (read)
+
+See the [full paths guide](./data-paths.md).
+
+| Method | Description | Signature | Example |
+|--------|-------------|-----------|---------|
+| `getPath(path)` | Deep read; auto-unwraps `data`/`attributes` REST envelopes. | `PathKey -> (obj -> a)` | `getPath('blog.title')(res)` |
+| `getPathMaybe(path)` | Literal read as a **`Maybe`** (`null` → Nothing). | `PathKey -> (obj -> Maybe<a>)` | `getPathMaybe('a.b')(o)` |
+| `getPathOr(default, path)` | Literal read; default only when absent (`null` preserved). | `(d, PathKey) -> (obj -> a\|d)` | `getPathOr(0, 'a.b')(o)` |
+| `path(obj)` | Accessor with `get`/`has`/`getAll`/`prop`. | `obj -> PathAccessor` | `path(o).get('a.b', 0)` |
+| `makePath(...parts)` | Build a dot-path, skipping falsy parts. | `(...string) -> string` | `makePath('a', x && 'b')` |
+
+### Paths (immutable write)
+
+See the [full paths guide](./data-paths.md). All return a new structure with structural sharing.
+
+| Method | Description | Signature | Example |
+|--------|-------------|-----------|---------|
+| `setPath(path, value)` | Deep set; creates missing intermediates. | `(PathKey, a) -> (obj -> obj)` | `setPath('a.b', 9)(o)` |
+| `updatePath(path, fn)` | Deep update via a function of the current value. | `(PathKey, (a -> a)) -> (obj -> obj)` | `updatePath('n', inc)(o)` |
+| `dissocPath(path)` | Deep remove (object key / array element). | `PathKey -> (obj -> obj)` | `dissocPath('a.b')(o)` |
+
+### Lenses
+
+See the [full lens guide](./lenses.md). Composable optics that unify get + set.
+
+| Method | Description | Signature | Example |
+|--------|-------------|-----------|---------|
+| `lensProp(key)` / `lensIndex(i)` / `lensPath(path)` | Build a lens onto a prop / index / nested path. | `key -> Lens` | `lensPath('a.b')` |
+| `lens(getter, setter)` | Build a custom lens. | `((s->a), (a,s)->s) -> Lens` | `lens(g, s)` |
+| `view(lens)` | Read the focus. | `Lens -> (s -> a)` | `view(l)(o)` |
+| `set(lens, value)` | Immutably replace the focus. | `(Lens, a) -> (s -> s)` | `set(l, 9)(o)` |
+| `over(lens, fn)` | Immutably transform the focus. | `(Lens, (a->a)) -> (s -> s)` | `over(l, inc)(o)` |
+| `composeLens(...lenses)` | Compose lenses to focus deeper. | `(...Lens) -> Lens` | `composeLens(a, b)` |
+
+### Structural transforms
+
+See the [full transforms guide](./data-transform.md).
+
+| Method | Description | Signature | Example |
+|--------|-------------|-----------|---------|
+| `flatten(obj, options?)` | Nested object → flat delimited-key map (O(n)). | `(obj, options?) -> obj` | `flatten({a:{b:1}})` |
+| `flattenWith(paths)` | Navigate a fixed wrapper sequence. | `string[] -> (obj -> a)` | `flattenWith(['data'])(o)` |
+| `unflatten(map, delimiter?)` | Inverse of `flatten`; numeric segments → arrays. | `(obj, string?) -> obj` | `unflatten({'a.b':1})` |
+| `pick(keys)` / `omit(keys)` | Immutably keep / drop keys. | `key[] -> (obj -> obj)` | `pick(['a'])(o)` |
+| `mergeDeep(a, b)` | Immutable right-biased deep merge. | `(obj, obj) -> obj` | `mergeDeep(def, patch)` |
+| `mergeDeepWith(fn, a, b)` | Deep merge with a combiner for leaf conflicts. | `((a,b)->c, obj, obj) -> obj` | `mergeDeepWith(add, a, b)` |
 
 ## DOM Utilities
 
