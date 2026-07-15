@@ -269,3 +269,79 @@ describe('scrollManager subscriber rate limiting', () => {
     vi.useRealTimers();
   });
 });
+
+describe('scrollManager mid-dispatch mutation (race safety)', () => {
+  // Finding #1: a subscriber unsubscribed by ANOTHER subscriber during the same
+  // dispatch must not be invoked from the stale snapshot.
+  it('does not invoke a subscriber unsubscribed by another during the same frame', () => {
+    const b = vi.fn();
+    let unsubB;
+    const a = () => unsubB(); // A (subscribed first) removes B mid-dispatch
+    const unsubA = scrollManager.subscribe(a);
+    unsubB = scrollManager.subscribe(b);
+    scrollTo(100);
+    expect(b).not.toHaveBeenCalled();
+    unsubA();
+  });
+
+  // Finding #1 (worst case): a debounced subscriber removed mid-dispatch must not
+  // re-arm a timer and fire after it was unsubscribed.
+  it('does not fire a debounced subscriber removed mid-dispatch', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+    const b = vi.fn();
+    let unsubB;
+    const a = () => unsubB();
+    const unsubA = scrollManager.subscribe(a);
+    unsubB = scrollManager.subscribe(b, { debounce: 100 });
+    scrollTo(100);
+    vi.advanceTimersByTime(200);
+    expect(b).not.toHaveBeenCalled();
+    unsubA();
+    vi.useRealTimers();
+  });
+
+  // Finding #2: a one-time trigger removed by an earlier trigger's callback in the
+  // same frame must not fire from the stale snapshot.
+  it('does not fire a one-time trigger removed by another during the same frame', () => {
+    const bCb = vi.fn();
+    let idB;
+    const aCb = () => scrollManager.removeOneTimeTrigger(idB);
+    const idA = scrollManager.addOneTimeTrigger({
+      direction: 'down', callback: aCb, requireActualScroll: false, resetOnStop: false,
+    });
+    idB = scrollManager.addOneTimeTrigger({
+      direction: 'down', callback: bCb, requireActualScroll: false, resetOnStop: false,
+    });
+    // Scroll well past any prior test's baseline so the direction is unambiguously
+    // 'down' regardless of singleton state carried in from earlier tests.
+    scrollTo(5000); // both match 'down'; A fires first and removes B
+    expect(bCb).not.toHaveBeenCalled();
+    scrollManager.removeOneTimeTrigger(idA);
+  });
+
+  // Finding #3: trigger ids must be unique even within the same millisecond with
+  // an identical Math.random() draw.
+  it('generates unique trigger ids within the same millisecond', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(1000);
+    const rnd = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const id1 = scrollManager.addOneTimeTrigger({ callback: () => {} });
+    const id2 = scrollManager.addOneTimeTrigger({ callback: () => {} });
+    expect(id1).not.toBe(id2);
+    scrollManager.removeOneTimeTrigger(id1);
+    scrollManager.removeOneTimeTrigger(id2);
+    rnd.mockRestore();
+    vi.useRealTimers();
+  });
+
+  // Finding #4: a scroll event that does not change scrollY (e.g. horizontal
+  // scroll) must not flip the reported direction.
+  it('keeps the last direction when a scroll event does not change scrollY', () => {
+    const unsub = scrollManager.subscribe(() => {});
+    scrollTo(5000); // unambiguously 'down' from any prior baseline
+    expect(scrollManager.getScrollPosition().direction).toBe('down');
+    scrollTo(5000); // same Y — must stay 'down', not flip to 'up'
+    expect(scrollManager.getScrollPosition().direction).toBe('down');
+    unsub();
+  });
+});

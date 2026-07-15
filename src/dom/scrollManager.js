@@ -90,6 +90,7 @@ export const ScrollManager = (() => {
 
       // State for one-time triggers
       const oneTimeTriggers = new Map();
+      let triggerSeq = 0; // monotonic id source (collision-free)
 
       /**
        * Start listening for scroll events
@@ -133,10 +134,12 @@ export const ScrollManager = (() => {
       const handleScroll = () => {
         scrollY = window.scrollY;
 
-        // Compute direction once, here, where scrollY actually changes.
-        // (Reads elsewhere must not mutate this baseline.)
-        currentDirection = scrollY > lastScrollY ? 'down' : 'up';
-        lastScrollY = scrollY;
+        // Compute direction only when the vertical position actually changed, so a
+        // horizontal (or no-op) scroll event doesn't spuriously flip the direction.
+        if (scrollY !== lastScrollY) {
+          currentDirection = scrollY > lastScrollY ? 'down' : 'up';
+          lastScrollY = scrollY;
+        }
 
         if (ticking) return;
 
@@ -165,8 +168,10 @@ export const ScrollManager = (() => {
         };
 
         // Snapshot so a subscriber that (un)subscribes during dispatch can't
-        // disturb the iteration.
-        for (const invoke of [...subscribers.values()]) {
+        // disturb the iteration, and re-check membership so a subscriber removed
+        // mid-dispatch by another subscriber is not invoked from the stale snapshot.
+        for (const [callback, invoke] of [...subscribers]) {
+          if (!subscribers.has(callback)) continue;
           try {
             invoke(scrollData);
           } catch (err) {
@@ -188,7 +193,10 @@ export const ScrollManager = (() => {
         const now = Date.now();
 
         // Snapshot: a trigger callback may add/remove triggers mid-dispatch.
+        // Re-check membership so a trigger removed earlier in this same frame is
+        // not fired (and can't arm an orphaned reset timer) from the stale snapshot.
         for (const [id, cfg] of [...oneTimeTriggers]) {
+          if (!oneTimeTriggers.has(id)) continue;
           // Mark that real scrolling has occurred (throttled to the frame).
           if (cfg.requireActualScroll) cfg.hasScrolled = true;
 
@@ -312,8 +320,9 @@ export const ScrollManager = (() => {
           return null;
         }
         
-        // Generate a unique ID
-        const triggerId = `trigger_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        // Generate a unique ID (monotonic counter — never collides, unlike a
+        // timestamp+random which could produce duplicate ids within the same ms).
+        const triggerId = `trigger_${++triggerSeq}`;
         
         // Track whether any actual scrolling has occurred
         let hasScrolled = !requireActualScroll;
