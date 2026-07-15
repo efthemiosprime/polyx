@@ -271,6 +271,25 @@ Returns the value if it exists, otherwise the provided default.
 const userName = maybeUser.map(user => user.name).getOrElse('Anonymous');
 ```
 
+#### `getOrElseGet(fn)`
+Like `getOrElse`, but the default is a **thunk** run only when the Maybe is Nothing — use
+it when the fallback is expensive.
+
+```javascript
+const settings = fromCache(key).getOrElseGet(() => loadFromDisk(key));
+```
+
+#### `toEither(leftValue)`
+Converts to an [`Either`](./either.md): a Nothing becomes `Left(leftValue)` (attach an
+error), a Just becomes `Right(value)`.
+
+```javascript
+findUser(id)                          // Maybe<User>
+  .toEither('User not found')         // Either<string, User>
+  .map(user => user.email)
+  .fold(err => notify(err), send);
+```
+
 > **Note:** because `Maybe.of(null)` is a Nothing, a Maybe cannot hold a legitimate `null`
 > as a present value. Use it for "value may be absent", not "value may be null".
 
