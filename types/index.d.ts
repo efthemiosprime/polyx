@@ -204,6 +204,14 @@ export function path(obj: any): PathAccessor;
 export function getPath(pathStr: PathKey): (obj: any) => any;
 export function makePath(...parts: Array<string | null | undefined>): string;
 
+export function setPath(pathStr: PathKey, value: any): (obj: any) => any;
+export function updatePath(
+  pathStr: PathKey,
+  fn: (current: any) => any
+): (obj: any) => any;
+export function dissocPath(pathStr: PathKey): (obj: any) => any;
+export function getPathMaybe(pathStr: PathKey): (obj: any) => Maybe<any>;
+
 // ---------------------------------------------------------------------------
 // dom / isInView, scrollManager, utils
 // ---------------------------------------------------------------------------
