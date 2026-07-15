@@ -6,6 +6,7 @@ export { isInView, createInViewChecker } from './dom/isInView.js';
 export { flatten, flattenWith } from './data/flatten.js';
 export { path, getPath, makePath } from './data/path.js';
 export { IO } from './async/io.js';
+export { Task } from './async/task.js';
 export { 
   getElement, 
   getElements, 
