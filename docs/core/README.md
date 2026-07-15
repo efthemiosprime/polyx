@@ -122,17 +122,26 @@ import { ArrayTransform } from '@efthemiosprime/polyx';
 
 ### [Compose](./compose.md)
 
-The compose utility enables functional composition, allowing multiple functions to be combined into a single function.
+The compose module bundles the core function-combinators.
 
 ```javascript
-import { compose } from '@efthemiosprime/polyx';
+import { compose, pipe, curry, tap, when, ifElse, evolve, identity, always, complement } from '@efthemiosprime/polyx';
 ```
 
 #### Methods
 
 | Method | Description | Signature | Example |
 |--------|-------------|-----------|---------|
-| `compose(...fns)` | Creates a function that is the composition of the provided functions. Functions are applied from right to left. | `((y -> z), (x -> y), ..., (a -> b)) -> (a -> z)` | `compose(double, increment)(5)` |
+| `compose(...fns)` | Compose right-to-left. | `(...fns) -> (a -> z)` | `compose(double, inc)(5)` |
+| `pipe(...fns)` | Compose left-to-right. | `(...fns) -> (a -> z)` | `pipe(inc, double)(5)` |
+| `curry(fn)` | Curry for partial application. | `fn -> curried` | `curry(add)(1)(2)` |
+| `tap(fn)` | Run a side effect, return the input unchanged. | `(a -> void) -> (a -> a)` | `pipe(tap(log), double)` |
+| `when(pred, fn)` | Apply `fn` only when `pred` is true. | `((a -> bool), (a -> a)) -> (a -> a)` | `when(isEven, double)` |
+| `ifElse(pred, onT, onF)` | Branch on a predicate. | `((a -> bool), (a -> b), (a -> c)) -> (a -> b\|c)` | `ifElse(gt0, inc, dec)` |
+| `evolve(prop, fn)` | Immutably transform one property. | `(k, (v -> v)) -> (obj -> obj)` | `evolve('n', inc)` |
+| `identity(x)` | Return the argument unchanged. | `a -> a` | `ifElse(p, f, identity)` |
+| `always(x)` | A function that always returns `x`. | `a -> (() -> a)` | `map(always(0))` |
+| `complement(pred)` | Negate a predicate. | `(a -> bool) -> (a -> bool)` | `filter(complement(isEmpty))` |
 
 **Example:**
 ```javascript
@@ -177,15 +186,17 @@ Provides functional utilities for handling scroll-related functionality in the b
 import { scrollManager } from '@efthemiosprime/polyx/dom';
 ```
 
+See the [full scrollManager guide](./scroll-manager.md) for options and real-world examples. Every callback receives `ScrollData` — `{ y, direction, timestamp }`.
+
 #### Methods
 
 | Method | Description | Signature | Example |
 |--------|-------------|-----------|---------|
-| `getScrollPosition()` | Gets the current scroll position of the window. | `() -> { x: number, y: number }` | `scrollManager.getScrollPosition()` |
-| `scrollTo(options)` | Scrolls to a specific position in the window. | `{ x?: number, y?: number, behavior?: string } -> void` | `scrollManager.scrollTo({ y: 500, behavior: 'smooth' })` |
-| `scrollToElement(element, offset = 0)` | Scrolls to a specific DOM element. | `(Element, number) -> void` | `scrollManager.scrollToElement(document.getElementById('section'), 20)` |
-| `isInViewport(element, offset = 0)` | Checks if an element is in the viewport. | `(Element, number) -> boolean` | `scrollManager.isInViewport(element)` |
-| `onScroll(callback)` | Registers a scroll event listener. | `(Event -> void) -> () -> void` | `const cleanup = scrollManager.onScroll(handleScroll)` |
+| `subscribe(cb, opts?)` | Subscribe to scroll (coalesced to one call/frame). `opts.throttle`/`opts.debounce` rate-limit. Returns an unsubscribe fn. | `((ScrollData -> void), { throttle?, debounce? }) -> (() -> void)` | `scrollManager.subscribe(fn, { throttle: 100 })` |
+| `getScrollPosition()` | Current scroll data (side-effect-free read). | `() -> ScrollData` | `scrollManager.getScrollPosition()` |
+| `addOneTimeTrigger(opts)` | Fire a callback the first time the user scrolls a direction. Returns a trigger id. | `({ direction, callback, ... }) -> string` | `scrollManager.addOneTimeTrigger({ direction: 'down', callback })` |
+| `removeOneTimeTrigger(id)` | Remove a trigger and cancel its timers. | `string -> void` | `scrollManager.removeOneTimeTrigger(id)` |
+| `resetOneTimeTrigger(id)` / `resetAllOneTimeTriggers()` | Re-arm one / all triggers. | `string -> void` / `() -> void` | `scrollManager.resetAllOneTimeTriggers()` |
 
 ### isInView
 

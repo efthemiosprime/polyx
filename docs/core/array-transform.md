@@ -106,6 +106,62 @@ const array = ArrayTransform.from([1, 2, 3])
 // array = [1, 4, 9]
 ```
 
+#### `flatMap(fn)`
+
+Maps each element to a value or array, then flattens one level (chainable).
+
+**Example:**
+```javascript
+ArrayTransform.from([1, 2, 3])
+  .flatMap(x => [x, x * 10])
+  .toArray();
+// [1, 10, 2, 20, 3, 30]
+```
+
+#### `reduce(fn, initial?)`
+
+Folds the array to a single value (terminal). The initial value is optional, matching
+`Array.prototype.reduce`.
+
+**Example:**
+```javascript
+const total = ArrayTransform.from([{ price: 3 }, { price: 5 }, { price: 2 }])
+  .reduce((sum, item) => sum + item.price, 0);
+// total = 10
+```
+
+#### `find(fn)`
+
+Returns the first matching element wrapped in a [`Maybe`](./maybe.md) — a **`Nothing`**
+when nothing matches, so there's no bare `undefined` to guard against.
+
+**Example:**
+```javascript
+ArrayTransform.from(users)
+  .find(u => u.id === 42)
+  .map(u => u.name)
+  .getOrElse('Unknown');
+```
+
+#### `head()`
+
+Returns the first element as a [`Maybe`](./maybe.md).
+
+**Example:**
+```javascript
+ArrayTransform.from(results).head().getOrElse(null);
+```
+
+#### `some(fn)` / `every(fn)`
+
+Terminal boolean checks: whether **any** / **all** elements pass the predicate.
+
+**Example:**
+```javascript
+ArrayTransform.from(cart).some(item => item.outOfStock); // any out of stock?
+ArrayTransform.from(fields).every(f => f.valid);         // all valid?
+```
+
 ## Real-World Examples
 
 ### Example 1: Processing User Data
@@ -141,16 +197,13 @@ const blogPosts = [
   { title: 'Web Security', tags: ['security', 'web', 'programming'] }
 ];
 
-// Extract all unique tags
+// Extract all unique tags — flatMap unnests, toSet dedupes.
 const uniqueTags = ArrayTransform.from(blogPosts)
-  .map(post => post.tags)
-  .forEach(tags => console.log(`Found tags: ${tags.join(', ')}`)) // Side effect - logging
-  .map(tags => tags.map(tag => tag.toLowerCase())) // Normalize case
-  .toArray()
-  .flat() // Flatten the array of arrays
-  .reduce((acc, tag) => acc.includes(tag) ? acc : [...acc, tag], []);
+  .flatMap(post => post.tags)          // ['javascript','programming','web','css', ...]
+  .map(tag => tag.toLowerCase())       // normalize case
+  .toSet();
 
-// Results in ['javascript', 'programming', 'web', 'css', 'design', 'react', 'vue', 'security']
+// uniqueTags = Set { 'javascript', 'programming', 'web', 'css', 'design', 'react', 'vue', 'security' }
 ```
 
 ### Example 3: Imperative vs Declarative Approach
@@ -179,6 +232,32 @@ const result = ArrayTransform.from(numbers)
   .toArray();
 
 console.log(result); // [4, 16, 36, 64, 100]
+```
+
+### Example 4: Shopping-cart summary (reduce + find + some)
+
+```javascript
+const cart = [
+  { id: 'a', name: 'Keyboard', price: 45, qty: 2, inStock: true },
+  { id: 'b', name: 'Mouse',    price: 20, qty: 1, inStock: true },
+  { id: 'c', name: 'Monitor',  price: 210, qty: 1, inStock: false },
+];
+
+// Total price with reduce
+const total = ArrayTransform.from(cart)
+  .reduce((sum, item) => sum + item.price * item.qty, 0); // 320
+
+// Can we check out? every item must be in stock
+const canCheckout = ArrayTransform.from(cart).every(item => item.inStock); // false
+
+// Is anything out of stock? (for a warning banner)
+const hasOutOfStock = ArrayTransform.from(cart).some(item => !item.inStock); // true
+
+// Find an item safely — no undefined to guard, get a Maybe back
+const monitorName = ArrayTransform.from(cart)
+  .find(item => item.id === 'c')
+  .map(item => item.name)
+  .getOrElse('Not found'); // 'Monitor'
 ```
 
 ## Best Practices
