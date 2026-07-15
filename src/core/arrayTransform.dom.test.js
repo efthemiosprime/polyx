@@ -1,7 +1,6 @@
+// @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
 import { ArrayTransform } from './arrayTransform.js';
-
-// Runs under jsdom (see vitest.config.js: *.dom.test.js -> jsdom).
 
 const makeList = (n) => {
   const ul = document.createElement('ul');
