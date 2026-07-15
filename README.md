@@ -29,6 +29,19 @@ For the full picture — including planned sections — see the [Documentation T
 npm install @efthemiosprime/polyx
 ```
 
+### TypeScript
+
+PolyX ships hand-written type definitions — `Maybe<T>`, `Either<L, R>`,
+`ArrayTransform<T>`, `IO<T>`, `Task<E, A>`, and the combinators are all fully typed,
+including per-subpath imports (`@efthemiosprime/polyx/core`, `/dom`, …). No `@types`
+package needed.
+
+```typescript
+import { Either } from '@efthemiosprime/polyx';
+
+const parsed: Either<Error, unknown> = Either.tryCatch(() => JSON.parse(input));
+```
+
 ## Core Concepts
 
 Poly implements several key abstractions from category theory:
@@ -65,6 +78,24 @@ divide(10, 2)
     error => console.error(error.message),
     result => console.log(`Result: ${result}`)
   );
+```
+
+Chain fallible steps and transform the **error** side ("railway-oriented"):
+
+```javascript
+const nonEmpty = s => s.length ? Either.Right(s) : Either.Left('required');
+const maxLen   = n => s => s.length <= n ? Either.Right(s) : Either.Left('too long');
+
+const validateName = name =>
+  Either.of(name)
+    .chain(nonEmpty)
+    .chain(maxLen(20))
+    .mapLeft(err => `Name is ${err}`);   // transform the failure
+
+validateName('').fold(
+  err => console.warn(err),   // "Name is required"
+  ok  => save(ok)
+);
 ```
 
 ### Task
